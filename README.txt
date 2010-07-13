@@ -16,7 +16,8 @@ development.
    http://drupal.org/files/issues/views_621142-16.patch
 3. Download the ARC library from http://code.semsol.org/source/arc.tar.gz
    and place it in sparql_views/lib/rdfx/vendor/
-4. After enabling Views, turn off Views data caching.
+4. Enable Views, Views UI, RDFx, and SPARQL Views.
+5. After enabling Views, turn off Views data caching.
 
 HACKS
 =====
