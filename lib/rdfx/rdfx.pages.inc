@@ -1,5 +1,4 @@
 <?php
-// $Id$
 
 /**
  * Callback function for viewing an entity as RDF.

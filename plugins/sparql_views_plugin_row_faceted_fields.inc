@@ -1,5 +1,4 @@
 <?php
-// $Id$
 /**
  * @file
  * Views row plugin that adds classes for faceted browsing.
