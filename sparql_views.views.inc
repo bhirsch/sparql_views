@@ -20,7 +20,7 @@ function sparql_views_views_data_alter(&$data) {
     // well. This will allow people to use the default types to query other
     // Drupal sites.
     if(isset($value['table']['group']) && $value['table']['group'] == 'SPARQL Views') {
-        $entity_info = entity_get_info($key);
+        $entity_info = entity_get_info('sparql_views_entity');
         if(isset($entity_info)) {
           foreach($entity_info['bundles'] as $bn_key => $bn_value) {
             $bn_rdf_mapping = $bn_value['rdf_mapping'];
