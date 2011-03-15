@@ -296,68 +296,6 @@ function sparql_views_delete_multiple(array $pids) {
   entity_get_controller('sparql_views')->delete($pids);
 }
 
-
-/**
- * Main class for test entities.
- */
-class EntityClass extends Entity {
-
-  public function __construct(array $values = array(), $entityType = NULL) {
-    parent::__construct($values, 'sparql_views');
-  }
-
-  /**
-   * Override buildContent() to add the username to the output.
-   */
-  public function buildContent($view_mode = 'full', $langcode = NULL) {
-    $content['user'] = array(
-      '#markup' => "User: ". format_username(user_load($this->uid)),
-    );
-    return entity_get_controller($this->entityType)->buildContent($this, $view_mode, $langcode, $content);
-  }
-
-  /**
-   * Specifies the default label, which is picked up by label() by default.
-   */
-  protected function defaultLabel() {
-    $type = sparql_views_get_types($this->name);
-    return $type->label;
-  }
-
-  /**
-   * Specifies the default uri, which is picked up by uri() by default.
-   */
-  protected function defaultURI() {
-    return array('path' => 'custom/' . $this->identifier());
-  }
-  
-    /**
-   * Save the field-collection item.
-   *
-   * During creation a host entity has to be specified via the setHostEntity()
-   * before this function is invoked. For the link between the entities to be
-   * fully established, the host entity object is updated automatically to
-   * include a reference on this field-collection item durign saving.
-   *
-   * @param $create_link
-   *   (internal) If FALSE is passed, creating the link to the host entity
-   *   is skipped.
-   */
-  public function save($create_link = TRUE) {
-    $transaction = db_transaction();
-    try {
-      $is_new = !empty($this->is_new);
-      $return = entity_get_controller($this->entityType)->save($this, $transaction);
-
-      return $return;
-    }
-    catch (Exception $e) {
-      $transaction->rollback($this->entityType, $e->getMessage(), array(), WATCHDOG_ERROR);
-      return FALSE;
-    }
-  }
-}
-
 function _sparql_views_predicate_ns($predicate) {
   $split = explode(':', $predicate);
   if(count($split) == 2)
