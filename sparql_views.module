@@ -47,6 +47,22 @@ function sparql_views_entity_access($op, $node = NULL, $account = NULL) {
   return FALSE;
 }
 
+/*
+ * Implements hook_module_implements_alter().
+ *
+ * This is necessary because Entity API recommends attaching bundles to
+ * entity info in hook_entity_info_alter(). However, rdf also attaches its
+ * mappings to the bundle with rdf_entity_info_alter. If the hook implementation
+ * for the entity comes after RDF, the mappings will not be attached.
+ */
+function sparql_views_module_implements_alter(&$implementations, $hook) {
+  if ($hook == 'entity_info_alter') {
+    $temp = $implementations['rdf'];
+    unset($implementations['rdf']);
+    $implementations['rdf'] = $temp;
+  }  
+}
+
 /**
  * Implement hook_entity_info().
  */
