@@ -22,33 +22,33 @@ function sparql_views_views_data_alter(&$data) {
     if(isset($value['table']['group']) && $value['table']['group'] == 'SPARQL Views') {
         $entity_info = entity_get_info('sparql_views_entity');
         if(isset($entity_info)) {
-          foreach($entity_info['bundles'] as $bn_key => $bn_value) {
-            $bn_rdf_mapping = $bn_value['rdf_mapping'];
+          foreach($entity_info['bundles'] as $bundle_type => $bundle) {
+            $rdf_mapping = $bundle['rdf_mapping'];
             $new_fields = array();
-            foreach ($bn_rdf_mapping as $key => $field ) {
-              if($key == 'rdftype')
+            foreach ($rdf_mapping as $field_name => $field ) {
+              if($field_name == 'rdftype')
                 continue;
-              $group = $bn_key;  
+              $group = $bundle_type;  
               $new_field = array(
-                'title' => t($key),
-                'help' => t('RDF mapping: %rdf-mapping', array('%rdf-mapping' => implode(', ', $bn_rdf_mapping[$key]['predicates']))),
+                'title' => t($field_name),
+                'help' => t('RDF mapping: %rdf-mapping', array('%rdf-mapping' => implode(', ', $field['predicates']))),
                 'group' => t($group),
                 'field' => array(
                   'handler' => 'sparql_views_handler_field',
-                  'rdf_mapping' => $bn_rdf_mapping[$key],
+                  'rdf_mapping' => $field,
                 ),
                 'relationship' => array(
                   'help' => t('The last comment of a node.'),
                   'group' => t($group),
                   'base' => 'sparql_views',
-                  'base field' => $key,
+                  'base field' => $field_name,
                   'handler' => 'sparql_views_handler_relationship',
                   'label' => t('Test Field'),
                 ),
               );
              
-              $new_fields[$bn_key.'_'.$key] = $new_field;
-             // $new_fields[$key.'_'.$bn_key.'_'.$key.'_relationship'] = $new_relationship;
+              $new_fields[$bundle_type.'_'.$field_name] = $new_field;
+             // $new_fields[$field_name.'_'.$bundle_type.'_'.$field_name.'_relationship'] = $new_relationship;
             }
             $data['sparql_views'] = array_merge($data['sparql_views'], $new_fields);  
           }
