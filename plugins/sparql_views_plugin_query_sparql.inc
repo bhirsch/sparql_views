@@ -62,7 +62,7 @@ class sparql_views_plugin_query_sparql extends views_plugin_query {
   */
   function query($view, $get_count = FALSE) {
     $triple_pattern = '';
-    $ns = _sparql_views_get_namespaces();
+    $ns = rdf_get_namespaces();
     $bindings = array();
     $prefixes = '';
     $mynamespaces = array();
