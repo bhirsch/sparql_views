@@ -79,7 +79,7 @@ class sparql_views_plugin_query_sparql extends views_plugin_query {
         $p = $pred_obj['p'];
         $o = $pred_obj['o'];
         $statements[] = " $p ?$o";
-        $mynamespaces[] = _predicate_ns($pred_obj['p']); 
+        $mynamespaces[] = _sparql_views_predicate_ns($pred_obj['p']); 
       }
       $triple_pattern .= implode(';', $statements) . ".\n";
     }
