@@ -271,21 +271,6 @@ function sparql_views_type_set_defaults($info = array()) {
   return $new_type;
 }
 
-/*function sparql_views_type_get_types($rebuild = FALSE) {
-  if (!$rebuild) {
-    $sparql_views_types = &drupal_static(__FUNCTION__);
-    if (isset($sparql_views_types)) {
-      return $sparql_views_types;
-    }
-  }
-  $query = db_select('sparql_views_entity', 'sve')
-    ->fields('name')
-    ->orderBy('sve.name', 'ASC');
-  $types = $query->execute()->fetchAll();
-  dpm($types);
-  return 'dbpedia_example';
-}*/
-
 /**
  * Delete multiple test entities.
  *
