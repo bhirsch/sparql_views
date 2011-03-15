@@ -33,7 +33,6 @@ function sparql_views_schema() {
     ),
     'foreign keys' => array(
       'uid' => array('users' => 'uid'),
-      'name' => array('sparql_views_entity_types' => 'name'),
     ),
     'primary key' => array('type'),
   );
