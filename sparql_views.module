@@ -268,28 +268,6 @@ function sparql_views_type_set_defaults($info = array()) {
   return $new_type;
 }
 
-function sparql_views_load($pid = NULL, $reset = FALSE){
-  $pids = (isset ($pid) ? array($pid) : array());
-  $postit = sparql_views_load_multiple($pids, $reset);
-  return $postit ? reset ($postit) : FALSE;
-}
-
-/**
- * Load multiple test entities based on certain conditions.
- *
- * @param $pids
- *   An array of entity IDs.
- * @param $conditions
- *   An array of conditions to match against the {entity} table.
- * @param $reset
- *   A boolean indicating that the internal cache should be reset.
- * @return
- *   An array of test entity objects, indexed by pid.
- */
-function sparql_views_load_multiple($pids = array(), $conditions = array(), $reset = FALSE) {
-  return entity_load('sparql_views', $pids, $conditions, $reset);
-}
-
 /*function sparql_views_type_get_types($rebuild = FALSE) {
   if (!$rebuild) {
     $sparql_views_types = &drupal_static(__FUNCTION__);
