@@ -1,6 +1,91 @@
 <?php
-
+// $Id$
 /**
- * sparql_views.install
+ * Implementation of hook_schema().
  */
+function sparql_views_schema() {
+  $schema['sparql_views_entity'] = array (
+    'fields' => array(
+      'type' => array(
+        'description' => 'The name of the sparql_views_entity.',
+        'type' => 'varchar',
+        'length' => 32,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'name' => array(
+        'description' => 'The name of the sparql_views_entity.',
+        'type' => 'varchar',
+        'length' => 32,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'uid' => array(
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => FALSE,
+        'default' => NULL,
+        'description' => "The {users}.uid of the associated user.",
+      ),
+    ),
+    'indexes' => array(
+      'uid' => array('uid'),
+    ),
+    'foreign keys' => array(
+      'uid' => array('users' => 'uid'),
+      'name' => array('sparql_views_entity_types' => 'name'),
+    ),
+    'primary key' => array('type'),
+  );
 
+  $schema['sparql_views_entity_type'] = array(
+    'description' => 'Stores information about all defined sparql_views_entity types.',
+    'fields' => array(
+      'id' => array(
+        'type' => 'serial',
+        'not null' => TRUE,
+        'description' => 'Primary Key: Unique sparql_views_entity type ID.',
+      ),
+      'name' => array(
+        'description' => 'The machine-readable name of this sparql_views_entity type.',
+        'type' => 'varchar',
+        'length' => 32,
+        'not null' => TRUE,
+      ),
+      'label' => array(
+        'description' => 'The human-readable name of this sparql_views_entity type.',
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'weight' => array(
+        'type' => 'int',
+        'not null' => TRUE,
+        'default' => 0,
+        'size' => 'tiny',
+        'description' => 'The weight of this sparql_views_entity type in relation to others.',
+      ),
+      'locked' => array(
+        'description' => 'A boolean indicating whether the administrator may delete this type.',
+        'type' => 'int',
+        'not null' => TRUE,
+        'default' => 0,
+        'size' => 'tiny',
+      ),
+      'data' => array(
+        'type' => 'text',
+        'not null' => FALSE,
+        'size' => 'big',
+        'serialize' => TRUE,
+        'description' => 'A serialized array of additional data related to this sparql_views_entity type.',
+        'merge' => TRUE,
+      ),
+    ) + entity_exportable_schema_fields(),
+    'primary key' => array('id'),
+    'unique keys' => array(
+      'name' => array('name'),
+    ),
+  );
+  return $schema;
+}

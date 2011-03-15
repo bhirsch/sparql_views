@@ -1,205 +1,117 @@
 <?php
-
 /**
- * @file
- * Views query plugin to build and transmit a SPARQL query to an endpoint.
+ * Object used to create a SELECT query.
  */
-
 class sparql_views_plugin_query_sparql extends views_plugin_query {
+  /**
+   * An array of fields which have been specified for selection. Fields may be
+   * included in the triple patterns (i.e. in filters or for path traversal)
+   * without being selected for retrieval.
+   */
+  var $select_fields = array();
+
+  /**
+   * An array of sections of the triple pattern. Each section is in itself
+   * an array of pieces.
+   */
+  var $triples = array();
+
+  /**
+   * A pager plugin that should be provided by the display.
+   */
+  var $pager = NULL;
 
   /**
    * Constructor; Create the basic query object and fill with default values.
    */
-  function init($base_table = 'sparql_ep', $base_field, $query_options) {
-    // @todo Add JS for hiding irrelvant field items.
-
-    $this->endpoint_url = $query_options['endpoint_url'];
-    $this->endpoint_read_key = $query_options['endpoint_read_key'];
-    $this->prefixes = $query_options['prefixes'];
+  function init($base_table, $base_field, $options) {
+    parent::init($base_table, $base_field, $options);
+    $this->base_table = $base_table;
+    $this->base_field = $base_field;
+    $this->unpack_options($this->options, $options);
   }
 
-  /**
-   * Construct the "WHERE" or "HAVING" part of the query.
-   *
-   * @param $where
-   *   'where' or 'having'.
-   */
-  function condition_query($where = 'where') {
-    $clauses = array();
-    if ($this->$where) {
-      foreach ($this->$where as $group => $info) {
-        $clause = implode($info['type'], $info['clauses']);
-        if (count($info['clauses']) > 1) {
-          $clause = $clause;
-        }
-        $clauses[] = $clause;
-      }
+  function option_definition() {
+    $options = parent::option_definition();
+    $options['endpoint'] = array('default' => '');
 
-      // Unset the empty clause that is added (apparently by default).
-      unset($clauses[0]);
-      if ($clauses) {
-        if (count($clauses) > 1) {
-          return implode(")". $this->group_operator, $clauses);
-        }
-        else {
-          return array_shift($clauses);
-        }
-      }
+    return $options;
+  }
+  
+  function options_form(&$form, &$form_state) {
+    $endpoints = entity_load('sparql_endpoint', FALSE);
+    $ep_options = array();
+    foreach($endpoints as $key => $value) {
+      $ep_options[$value->endpoint] = $value->title;
     }
-    return "";
+    $form['endpoint'] = array(
+      '#type' => 'select',  
+      '#options' => $ep_options,
+      '#title' => t('SPARQL Endpoint'),
+      '#default_value' => $this->options['endpoint'],
+      '#description' => t("The SPARQL endpoint that you want to access."),
+    );
   }
 
-  function use_pager() {
-    return FALSE;
-  }
-
-  /**
-   * Generate a query and a countquery from all of the information supplied
-   * to the object.
-   *
-   * @param $get_count
-   *   Provide a countquery if this is true, otherwise provide a normal query.
-   */
+ /**
+  * Generate a query and a countquery from all of the information supplied
+  * to the object.
+  *
+  * @param $get_count
+  *   Provide a countquery if this is true, otherwise provide a normal query.
+  */
   function query($view, $get_count = FALSE) {
-
-    $where = $this->condition_query();
-
-    $params = $this->params;
-    if (!empty($view->pager['items_per_page'])) {
-      $params['rpp'] = $view->pager['items_per_page'] <= 100 ? $view->pager['items_per_page'] : 100;
+    $triple_pattern = '';
+    $ns = _sparql_views_get_namespaces();
+    $bindings = array();
+    $prefixes = '';
+    $mynamespaces = array();
+    // Add a question mark before each variable.
+    foreach ($this->select_fields as $key => $field) {
+      $this->select_fields[$key] = "?$field";
     }
-    $params['WHERE'] = $where;
-
-    // Build the full string.
-    $items = array();
-    if ($params) {
-      foreach ($params as $key => $value) {
-        if ($key == 'q') {
-          array_unshift($items, 'query='. urlencode($value));
-        }
-        else if ($key == 'WHERE') {
-          $where_condition = "{". $value ."}";
-          $items[] = $key . $where_condition;
-        }
-        else {
-          $items[] = $key .'='. urlencode($value);
-        }
+    $select = 'SELECT ' . implode(' ', $this->select_fields);
+    $where = '';
+    foreach($this->triples as $s => $pattern) {
+      $statements = array();
+      $triple_pattern .= "?$s";
+      foreach($pattern['pred_obj'] as $pred_obj) {
+        $p = $pred_obj['p'];
+        $o = $pred_obj['o'];
+        $statements[] = " $p ?$o";
       }
+      $triple_pattern .= implode(';', $statements) . ".\n";
+      $mynamespaces[] = _predicate_ns($pred_obj['p']); 
     }
-    $params = implode('&', $items);
-
-    return $params;
-  }
-
-  /**
-   * Get the arguments attached to the WHERE and HAVING clauses of this query.
-   */
-  function get_where_args() {
-    $args = array();
-    foreach ($this->where as $group => $where) {
-      $args = array_merge($args, $where['args']);
+    $mynamespaces = array_unique($mynamespaces);
+    foreach($mynamespaces as $prefix) {
+      $namespace = $ns[$prefix];
+      $prefixes .= "PREFIX $prefix: <$namespace>\n";
     }
-
-    if ($this->having) {
-      foreach ($this->having as $group => $having) {
-        $args = array_merge($args, $having['args']);
-      }
-    }
-    return $args;
-  }
-
-  /**
-   * Create a new grouping for the WHERE or HAVING clause.
-   *
-   * @param $type
-   *   Either 'AND' or 'OR'. All items within this group will be added
-   *   to the WHERE clause with this logical operator.
-   * @param $group
-   *   An ID to use for this group. If unspecified, an ID will be generated.
-   * @param $where
-   *   'where' or 'having'.
-   *
-   * @return $group
-   *   The group ID generated.
-   */
-  function set_where_group($type = 'AND', $group = NULL, $where = 'where') {
-    // Set an alias.
-    $groups = &$this->$where;
-
-    if (!isset($group)) {
-      $group = empty($groups) ? 1 : max(array_keys($groups)) + 1;
-    }
-
-    if ($type === 'AND') {
-      $type = ' ';
-    }
-
-    // Create an empty group
-    if (empty($groups[$group])) {
-      $groups[$group] = array('clauses' => array(), 'args' => array());
-    }
-
-    $groups[$group]['type'] = strtoupper($type);
-    return $group;
-  }
-
-  function add_param($param, $value = '') {
-    $this->params[$param] = $value;
-  }
-
-  function add_where($group, $clause) {
-    $args = func_get_args();
-    // ditch $group
-    array_shift($args);
-    // ditch $clause
-    array_shift($args);
-    // Expand an array of args if it came in.
-    if (count($args) == 1 && is_array(reset($args))) {
-      $args = current($args);
-    }
-
-    // Ensure all variants of 0 are actually 0. Thus '', 0 and NULL are all
-    // the default group.
-    if (empty($group)) {
-      $group = 0;
-    }
-
-    // Check for a group.
-    if (!isset($this->where[$group])) {
-      $this->set_where_group('AND', $group);
-    }
-
-    // Add the clause and the args.
-    if (is_array($args)) {
-      $this->where[$group]['clauses'][] = $clause;
-      // we use array_values() here to prevent array_merge errors as keys from multiple
-      // sources occasionally collide.
-      $this->where[$group]['args'] = array_merge($this->where[$group]['args'], array_values($args));
-    }
+    $limit = isset($this->limit) ? "LIMIT $this->limit" : 'LIMIT 10';
+    
+    $query = $prefixes;
+    $query .= $select . "\n";
+    $query .= "WHERE {\n$triple_pattern} \n";
+    $query .= $limit;
+    return $query;
   }
 
   /**
    * Let modules modify the query just prior to finalizing it.
    */
-  function alter(&$view) {
-    foreach (module_implements('sparql_views_query_alter') as $module) {
-      $function = $module .'_sparql_views_query_alter';
-      $function($view, $this);
-    }
-  }
+  function alter(&$view) {  }
 
   /**
    * Builds the necessary info to execute the query.
    */
   function build(&$view) {
-    $this->init_pager($view);
-    if ($this->pager->use_pager()) {
-      $this->pager->set_current_page($view->current_page);
-    }
+    $view->init_pager();
+
+    // Let the pager modify the query to add limits.
+    $this->pager->query($view);
 
     $view->build_info['query'] = $this->query($view);
-    $view->build_info['count_query'] = $this->query($view, TRUE);
-    $view->build_info['query_args'] = $this->get_where_args();
   }
 
   /**
@@ -209,111 +121,95 @@ class sparql_views_plugin_query_sparql extends views_plugin_query {
    * Values to set: $view->result, $view->total_rows, $view->execute_time,
    * $view->pager['current_page'].
    */
-  function execute(&$view) {
+  function execute(&$view) {  
+    module_load_include('inc', 'rdfx', 'rdfx.sparql');
     $query = $view->build_info['query'];
-
-    if ($query) {
-      $replacements = module_invoke_all('views_query_substitutions', $view);
-      $query = str_replace(array_keys($replacements), $replacements, $query);
-
-      $start = views_microtime();
-
-      $endpoint = $this->endpoint_url;
-      // @todo fix this after demo to replace all args, not just one
-      /*foreach ($view->args as $arg_num) {
-        $query = str_replace('%1', urldecode($view->args[0]), $query);
-      }*/
-      $query_test = array('type' => 'property',
-        'query' => "$this->prefixes SELECT * $query",
-      );
-      $results = rdfx_sparql_request($query_test['query'], $endpoint, array('store_read_key' => $this->endpoint_read_key));
-      if ($results['result']) {
-        foreach ($results['result']['rows'] as $resource) {
-          $view->result[] = $resource;
-        }
-        // Save the metadata into the object.
-        unset($results['result']);
-        foreach ($results as $key => $value) {
-          $this->$key = $value;
-        }
-
-        $this->execute_time = $this->completed_in;
-
-        // FIXME
-        //$this->total_rows = $this->results_per_page * 2;
-        //$this->pager['current_page'] = $this->page -1;
+    $endpoint = $this->options['endpoint'];
+    $start = microtime(TRUE);
+    $sparql_result = rdfx_sparql_request($query, $endpoint);
+    $rows = $sparql_result['result']['rows'];
+    $fields = $sparql_result['result']['variables'] ;
+    foreach ($rows as $row) {
+      $views_row = array();
+      foreach($fields as $field) {
+        $views_row[$field] = $row[$field];
       }
+      $views_result[] = (object) $views_row;
+    }
+    $view->result = $views_result;
+    $view->total_rows = count($views_result);
+    $view->execute_time = microtime(TRUE) - $start;
+    $view->pager['current_page'] = 0;
+  }
+
+  function add_field($table, $field, $alias = '', $params = array()) {
+      // We can't use any alias in YQL query, so just use the real field name.
+      $alias = $field;
+
+      // Create a field info array.
+      $field_info = array(
+        'field' => $field,
+        'table' => $table,
+        'alias' => $alias,
+      ) + $params;
+
+      if (empty($this->fields[$alias])) {
+        $this->fields[$alias] = $field_info;
+      }
+
+      return $alias;
     }
 
-    $view->execute_time = views_microtime() - $start;
+  /**
+   * Add a signature to the query, if such a thing is feasible.
+   *
+   * This signature is something that can be used when perusing query logs to
+   * discern where particular queries might be coming from.
+   */
+ // function add_signature(&$view) { }
+
+  /**
+   * Get aggregation info for group by queries.
+   *
+   * If NULL, aggregation is not allowed.
+   */
+ // function get_aggregation_info() { }
+
+ // function options_validate(&$form, &$form_state) { }
+
+  function validate() {
+    if($this->options['endpoint'] == '') {
+      return array('Please choose a SPARQL Endpoint from "Query settings"');
+    }
+  }
+ // function options_submit(&$form, &$form_state) { }
+
+ // function summary_title() {
+ //   return t('Settings');
+ // }
+
+  /**
+   * Set a LIMIT on the query, specifying a maximum number of results.
+   */
+  function set_limit($limit) {
+    $this->limit = $limit;
   }
 
-  function add_signature(&$view) {
-    //$view->query->add_field(NULL, "'" . $view->name . ':' . $view->current_display . "'", 'view_name');
-  }
+  /**
+   * Set an OFFSET on the query, specifying a number of results to skip
+   */
+ // function set_offset($offset) {
+ //   $this->offset = $offset;
+ // }
 
-  // This can only be displayed in the UI if the patch in
-  // http://drupal.org/node/621142 is applied.
-  function option_definition() {
-    $options = parent::option_definition();
-    return $options;
-  }
-
-  function admin_summary() {
-    if (!empty($this->options['exposed'])) {}
-  }
-
-  function options_form(&$form, &$form_state) {
-    $form['endpoint_url'] = array(
-      '#type' => 'textfield',
-      '#title' => t('SPARQL Endpoint'),
-      '#default_value' => $this->endpoint_url,
-      '#description' => t("The SPARQL endpoint that you want to access. For instance, !dbpedia.",
-        array('!dbpedia' => l('http://dbpedia.org/sparql', 'http://dbpedia.org/sparql'))
-      ),
-    );
-    /*$form['load_predicates'] = array(
-      '#type' => 'checkbox',
-      '#title' => t('Load predicates used in dataset'),
-      '#default_value' => TRUE,
-      '#description' => t("You can use autocompltion for predicates in your query if you load the predicates used in the dataset. Note, loading predicates will take a while."),
-    );*/
-    $form['endpoint_read_key'] = array(
-      '#type' => 'textfield',
-      '#title' => t('Read Key'),
-      '#default_value' => $this->endpoint_read_key,
-      '#description' => t("Key for read access to the endpoint."),
-    );
-    $form['prefixes'] = array(
-      '#type' => 'textarea',
-      '#title' => t('Prefixes'),
-      '#default_value' => $this->prefixes,
-      '#description' => t("Prefixes to use for this query."),
-      '#attributes' => array('class' => 'prefix-store'),
-    );
-    /*$form['prefixes_testing'] = array(
-      '#type' => 'textfield',
-      '#title' => t('Prefixes'),
-      '#autocomplete_path' => 'sparql_views/prefixes/autocomplete',
-      '#description' => t("Prefixes to use for this query."),
-    );*/
-  }
-
-  function options_validate(&$form, &$form_state) {}
-
-  function options_submit(&$form, &$form_state) {
-    $endpoint = $form_state['values']['query']['options']['endpoint_url'];
-    $access_key = $form_state['values']['query']['options']['endpoint_read_key'];
-
-    // If the user wants to load the predicates, do a SPARQL request and cache
-    // the predicates.
-    //if ($form_state['values']['query']['options']['load_predicates'] === TRUE) {
-    /*$results = rdfx_sparql_request("SELECT DISTINCT ?p WHERE {?s ?p ?o}", $endpoint, array('store_read_key' => $access_key));
-    foreach ($results['result']['rows'] as $result) {
-      $predicates[] = $result['p'];
-    }*/
-    //cache_set();
-    //}
-  }
+ // /**
+ //  * Render the pager, if necessary.
+ //  */
+ // function render_pager() {
+ //   if (!empty($this->pager) && $this->pager->use_pager()) {
+ //     $exposed_input = isset($this->view->exposed_data_raw) ? $this->view->exposed_data_raw : NULL;
+ //     return $this->pager->render($exposed_input);
+ //   }
+ //   return '';
+ // }
 }
-

@@ -1,131 +1,378 @@
 <?php
-
-/**
- * SPARQL Views
- *
- * The SPARQL Views module enables the creation of SPARQL queries in Views.
- * SPARQL is a query language for accessing RDF datastores, frequently to access
- * remote datastores using HTTP.
- */
-
-include_once (drupal_get_path('module', 'rdfx') .'/rdfx.sparql.inc');
-include_once (drupal_get_path('module', 'rdfx') .'/rdfx.import.inc');
-
-/**
- * Implements hook_views_api().
- */
+// $Id$
 function sparql_views_views_api() {
   return array(
     'api' => '3.0-alpha1',
+    'path' => drupal_get_path('module', 'sparql_views'),
   );
+  return '3.0-alpha1';
+}
+
+function _sparql_views_get_namespaces() {
+  $rdf_namespaces = &drupal_static(__FUNCTION__);
+  if (empty($rdf_namespaces)) {
+    $rdf_namespaces = module_invoke_all('rdf_namespaces');
+    foreach($rdf_namespaces as $ns => $url) {
+      if(is_array($url)) {
+        $rdf_namespaces[$ns] = $url[0];
+      }
+    }
+  }
+  // @todo ensure there are no duplicates and that array is only one level.
+  return $rdf_namespaces;
+}
+
+/*
+ * Implements hook_permission().
+ */
+function sparql_views_permission() {
+  return array(
+    'administer sparql_views types' => array(
+      'title' => t('Administer SPARQL Views entities'), 
+      'description' => t('Add new entities and manage fields to be used in SPARQL Views queries.'),
+    ),
+  );
+}
+
+function sparql_views_rdf_namespaces() {
+  return array(
+    'dbpedia2' => 'http://dbpedia.org/property/',
+  );
+}
+
+function sparql_views_entity_access($op, $node = NULL, $account = NULL) {
+  if (user_access('administer sparql_views types', $account)) {
+    return TRUE;
+  }
+  return FALSE;
 }
 
 /**
- * Implements hook_menu().
+ * Implement hook_entity_info().
  */
-function sparql_views_menu() {
-  $items['sparql_views/autocomplete/subject-object/%/%'] = array(
-    'title' => 'SPARQL variables autocomplete',
-    'page callback' => 'sparql_views_variables_autocomplete',
-    'access arguments' => array('administer views'),
-    'type' => MENU_CALLBACK,
-    'file' => 'sparql_views.pages.inc',
+function sparql_views_entity_info() {
+  $return = array(
+    'sparql_views' => array(
+      'label' => t('Test Entity'),
+      'entity class' => 'Entity',
+      'controller class' => 'EntityAPIController',
+      'base table' => 'sparql_views_entity',
+      'fieldable' => TRUE,
+      'access callback' => 'sparql_views_entity_access',
+      'admin ui' => array(
+        'path' => 'admin/structure/sparql_views/types',
+      ),
+      'entity keys' => array(
+        'id' => 'type',
+        'bundle' => 'name',
+      ),
+      // Make use the class' label() and uri() implementation by default.
+      'label callback' => 'entity_class_label',
+      'uri callback' => 'entity_class_uri',
+      'bundles' => array(
+        'dbpedia_example'=> array(
+          'label' => 'PostIt',
+          'admin' => array(
+            'path' => 'admin/structure/sparql_views/types/manage/dbpedia_example',
+            'access arguments' => array('administer dbpedia_examples'),
+          ),
+        ),
+      ),
+      'bundle keys' => array(
+        'bundle' => 'name',
+      ),
+    ),
   );
-  $items['sparql_views/autocomplete/predicate'] = array(
-    'title' => 'SPARQL variables autocomplete',
-    'page callback' => 'sparql_views_predicates_autocomplete',
-    'access arguments' => array('administer views'),
-    'type' => MENU_CALLBACK,
-    'file' => 'sparql_views.pages.inc',
+  $return['sparql_views_type'] = array(
+    'label' => t('Test entity type'),
+    'entity class' => 'Entity',
+    'controller class' => 'EntityAPIController',
+    'base table' => 'sparql_views_entity_type',
+    'fieldable' => FALSE,
+    'bundle of' => 'sparql_views',
+    'exportable' => TRUE,
+    'entity keys' => array(
+      'id' => 'id',
+      'name' => 'name',
+    ),
   );
-  $items['sparql_views/prefixes/autocomplete'] = array(
-    'title' => 'Endpoint predicate loader',
-    'page callback' => 'sparql_views_autocomplete_prefixes',
-    'access arguments' => array('administer views'),
-    'type' => MENU_CALLBACK,
-    'file' => 'sparql_views.pages.inc',
-  );
-
-  return $items;
+  return $return;
 }
 
-/*
- * Helper function to retrieve the variables that have been entered in filters.
- * These variables are used as the fields in Views.
+/**
+ * Implement hook_entity_info_alter().
+ *
+ * Use this hook to specify entity test bundles to avoid a recursion, as loading
+ * the entity test types needs the entity info too.
  */
-function _sparql_views_get_fields($view = NULL, $display_name = NULL) {
-  $fields = array();
-  $sparql_view_names = array();
-
-  if ($view != NULL && $display_name != NULL) {
-    $fields = _sparql_views_get_filters($view, $display_name);
+function sparql_views_entity_info_alter(&$entity_info) {
+  foreach (sparql_views_get_types() as $info) {
+    $entity_info['sparql_views']['bundles'][$info->name] = array(
+      'label' => $info->name,
+      'admin' => array(
+        'path' => "admin/structure/sparql_views/types/manage/$info->name",
+        'bundle argument' => 5,
+        'access arguments' => array('administer sparql_views types'),
+      ),
+    );
   }
-  else if ($view != NULL) {
-    $fields = _sparql_views_get_filters($view, 'default');
-  }
-
-  //@todo Move this to _sparql_views_get_all_fields which could be Drupal static.
-  else {
-    $views = views_get_all_views();
-    foreach ($views as $view_name => $view) {
-      $query_type = $view->display['default']->display_options['query']['type'];
-      if ($query_type == 'sparql_query') {
-        $sparql_view_names[] = $view_name;
-      }
-    }
-    foreach ($sparql_view_names as $view_name) {
-      // Get the view the user is editing based on the URL.
-      $view = views_ui_cache_load($view_name);
-
-      foreach ($view->display as $display_name => $display) {
-        $fields = array_merge(_sparql_views_get_filters($view, $display_name), $fields);
-      }
-    }
-  }
-
-  return $fields;
 }
 
-function _sparql_views_get_filters($view = NULL, $display_name = NULL) {
-  $fields = array();
-
-  $default_filters = $view->display['default']->display_options['filters'];
-  $display_filters = $view->display[$display_name]->display_options['filters'];
-
-  // If where clauses haven't been added to the default or the display, there
-  // are no added fields.
-  if (empty($default_filters) && empty($display_filters)) {
-    return array();
-  }
-  // Else, if where clauses have been added to the default but not to the
-  // display, use the default where clauses.
-  else if (empty($display_filters)) {
-    $display_filters = $default_filters;
-  }
-
-  // Iterate through the where clauses and pull out the variables.
-  foreach ($display_filters as $filter) {
-    // If there is an empty Where clause, $filter will not have values.
-    if (!empty($filter['value'])) {
-      foreach ($filter['value'] as $value) {
-        if (strpos($value, '?') === 0) {
-          $field = substr($value, 1);
-          $fields[$field] = $field;
-        }
-      }
-    }
-  }
-
-  return $fields;
-}
-
-/*
- * Get namespace mappings from prefix.cc.
- * @todo This functionality still needs to be implemented.
+/**
+ * Gets an array of all test entity types, keyed by the name.
+ *
+ * @param $name
+ *   If set, the type with the given name is returned.
  */
-function _sparql_views_fetch_prefixes() {
-  // @todo Use Drupal cache.
-  $results = rdfx_fetch_rdf('http://prefix.cc/popular/all.rdf.plain', 'prefix');
-  return $results[1];
+function sparql_views_get_types($name = NULL) {
+  $types = entity_load('sparql_views', isset($name) ? array($name) : FALSE);
+  if (isset($name)) {
+    return isset($types[$name]) ? $types[$name] : FALSE;
+  }
+  return $types;
 }
 
+/**
+ * Displays the SPARQL Views type admin overview page.
+ */
+function sparql_views_overview_form() {
+  $entity_info = entity_get_info('sparql_views');
+  $types = $entity_info['bundles'];
+  $names = array();
+  $field_ui = module_exists('field_ui');
+  $header = array(t('Name'), array('data' => t('Operations'), 'colspan' => $field_ui ? '4' : '2'));
+  $rows = array();
+
+  foreach ($types as $key => $type) {
+    $description = isset($type['description']) ? $type['description'] : '';
+    $type_definition = array('type' => $key, 'description' => $description);
+    $row = array(theme('node_admin_overview', array('name' => $type['label'], 'type' => (object) $type_definition)));
+    // Set the edit column.
+    $row[] = array('data' => l(t('edit'), 'admin/structure/sparql_views/types/manage/' . $key));
+
+    if ($field_ui) {
+      // Manage fields.
+      $row[] = array('data' => l(t('manage fields'), 'admin/structure/sparql_views/types/manage/' . $key . '/fields'));
+
+      // Display fields.
+      $row[] = array('data' => l(t('manage display'), 'admin/structure/sparql_views/types/manage/' . $key . '/display'));
+    }
+    if (isset($type['custom'])) {
+      $row[] = array('data' => l(t('delete'), 'admin/structure/sparql_views/types/manage/' . $key . '/delete'));
+    }
+    $rows[] = $row;
+  }
+
+  $build['node_table'] = array(
+    '#theme' => 'table',
+    '#header' => $header,
+    '#rows' => $rows,
+    '#empty' => t('No content types available. <a href="@link">Add content type</a>.', array('@link' => url('admin/structure/types/add'))),
+  );
+
+  return $build;
+}
+
+/**
+ * Generates the node type editing form.
+ */
+function sparql_views_form($form, &$form_state, $sparql_views, $op = 'edit') {
+  if ($op == 'clone') {
+    $sparql_views->label .= ' (cloned)';
+    $sparql_views->type .= '_clone';
+  }
+  else if ($op == 'add') {
+    sparql_views_type_set_defaults();
+    $sparql_views->label = '';
+  }
+
+  $form['label'] = array(
+    '#title' => t('Label'),
+    '#type' => 'textfield',
+    '#default_value' => $sparql_views->label,
+  );
+  // Machine-readable type name.
+  $form['type'] = array(
+    '#type' => 'machine_name',
+    '#default_value' => isset($sparql_views->type) ? $sparql_views->type : '',
+    //'#disabled' => $sparql_views->isLocked(),
+    '#machine_name' => array(
+      'exists' => 'sparql_views_get_types',
+      'source' => array('label'),
+    ),
+    '#description' => t('A unique machine-readable name for this profile type. It must only contain lowercase letters, numbers, and underscores.'),
+  );
+  $form['actions'] = array('#type' => 'actions');
+  $form['actions']['submit'] = array(
+    '#type' => 'submit',
+    '#value' => t('Save profile type'),
+    '#weight' => 40,
+  );
+  return $form;
+}
+
+/**
+ * Form API submit callback for the type form.
+ */
+function sparql_views_form_submit(&$form, &$form_state) {
+  $sparql_views = entity_ui_form_submit_build_entity($form, $form_state);
+  // Save and go back.
+  $sparql_views->name = $sparql_views->type;
+  $sparql_views->save();
+//  $form_state['redirect'] = 'admin/structure/sparql_views/types';
+}
+
+/**
+ * Sets the default values for a node type.
+ *
+ * The defaults are appropriate for a type defined through hook_node_info(),
+ * since 'custom' is TRUE for types defined in the user interface, and FALSE
+ * for types defined by modules. (The 'custom' flag prevents types from being
+ * deleted through the user interface.) Also, the default for 'locked' is TRUE,
+ * which prevents users from changing the machine name of the type.
+ *
+ * @param $info
+ *   An object or array containing values to override the defaults. See
+ *   hook_node_info() for details on what the array elements mean.
+ *
+ * @return
+ *   A node type object, with missing values in $info set to their defaults.
+ */
+function sparql_views_type_set_defaults($info = array()) {
+  $info = (array) $info;
+  $new_type = $info + array(
+    'type' => '',
+    'name' => '',
+    'base' => '',
+    'description' => '',
+    'help' => '',
+    'custom' => 0,
+    'modified' => 0,
+    'locked' => 1,
+    'disabled' => 0,
+    'is_new' => 1,
+    'has_title' => 0,
+    'title_label' => 'Title',
+  );
+  $new_type = (object) $new_type;
+
+  // If the type has no title, set an empty label.
+  if (!$new_type->has_title) {
+    $new_type->title_label = '';
+  }
+  if (empty($new_type->module)) {
+    $new_type->module = $new_type->base == 'node_content' ? 'node' : '';
+  }
+  $new_type->orig_type = isset($info['type']) ? $info['type'] : '';
+
+  return $new_type;
+}
+
+function sparql_views_load($pid = NULL, $reset = FALSE){
+  $pids = (isset ($pid) ? array($pid) : array());
+  $postit = sparql_views_load_multiple($pids, $reset);
+  return $postit ? reset ($postit) : FALSE;
+}
+
+/**
+ * Load multiple test entities based on certain conditions.
+ *
+ * @param $pids
+ *   An array of entity IDs.
+ * @param $conditions
+ *   An array of conditions to match against the {entity} table.
+ * @param $reset
+ *   A boolean indicating that the internal cache should be reset.
+ * @return
+ *   An array of test entity objects, indexed by pid.
+ */
+function sparql_views_load_multiple($pids = array(), $conditions = array(), $reset = FALSE) {
+  return entity_load('sparql_views', $pids, $conditions, $reset);
+}
+
+/*function sparql_views_type_get_types($rebuild = FALSE) {
+  if (!$rebuild) {
+    $sparql_views_types = &drupal_static(__FUNCTION__);
+    if (isset($sparql_views_types)) {
+      return $sparql_views_types;
+    }
+  }
+  $query = db_select('sparql_views_entity', 'sve')
+    ->fields('name')
+    ->orderBy('sve.name', 'ASC');
+  $types = $query->execute()->fetchAll();
+  dpm($types);
+  return 'dbpedia_example';
+}*/
+
+/**
+ * Delete multiple test entities.
+ *
+ * @param $pids
+ *   An array of test entity IDs.
+ */
+function sparql_views_delete_multiple(array $pids) {
+  entity_get_controller('sparql_views')->delete($pids);
+}
+
+
+/**
+ * Main class for test entities.
+ */
+class EntityClass extends Entity {
+
+  public function __construct(array $values = array(), $entityType = NULL) {
+    parent::__construct($values, 'sparql_views');
+  }
+
+  /**
+   * Override buildContent() to add the username to the output.
+   */
+  public function buildContent($view_mode = 'full', $langcode = NULL) {
+    $content['user'] = array(
+      '#markup' => "User: ". format_username(user_load($this->uid)),
+    );
+    return entity_get_controller($this->entityType)->buildContent($this, $view_mode, $langcode, $content);
+  }
+
+  /**
+   * Specifies the default label, which is picked up by label() by default.
+   */
+  protected function defaultLabel() {
+    $type = sparql_views_get_types($this->name);
+    return $type->label;
+  }
+
+  /**
+   * Specifies the default uri, which is picked up by uri() by default.
+   */
+  protected function defaultURI() {
+    return array('path' => 'custom/' . $this->identifier());
+  }
+  
+    /**
+   * Save the field-collection item.
+   *
+   * During creation a host entity has to be specified via the setHostEntity()
+   * before this function is invoked. For the link between the entities to be
+   * fully established, the host entity object is updated automatically to
+   * include a reference on this field-collection item durign saving.
+   *
+   * @param $create_link
+   *   (internal) If FALSE is passed, creating the link to the host entity
+   *   is skipped.
+   */
+  public function save($create_link = TRUE) {
+    $transaction = db_transaction();
+    try {
+      $is_new = !empty($this->is_new);
+      $return = entity_get_controller($this->entityType)->save($this, $transaction);
+
+      return $return;
+    }
+    catch (Exception $e) {
+      $transaction->rollback($this->entityType, $e->getMessage(), array(), WATCHDOG_ERROR);
+      return FALSE;
+    }
+  }
+}

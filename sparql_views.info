@@ -1,5 +1,12 @@
+; $Id$
 name = SPARQL Views
-description = Runs a query against a SPARQL endpoint.
+description = A module for creating SPARQL queries on external endpoints and displaying them using Views.
 dependencies[] = views
-dependencies[] = rdfx
-core = 6.x
+dependencies[] = entity
+package = rdf
+core = 7.x
+files[] = sparql_views.module
+files[] = sparql_views.views.inc
+files[] = handlers/sparql_views_handler_field.inc
+files[] = handlers/sparql_views_handler_relationship.inc
+files[] = plugins/sparql_views_plugin_query_sparql.inc

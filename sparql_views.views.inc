@@ -1,109 +1,94 @@
 <?php
-
-/**
- * @file
- * Provide Views data, handler and plugins for SPARQL Views. These only
- * depend on SPARQL Views default dependencies. Any handlers or plugins that
- * are dependent on additional modules are placed in their own module in the
- * sparql_views/modules folder.
- */
-
-/**
- * Implements hook_views_data.
- *
- * Declare the base table and all of the fields. Because available fields are
- * not in a known schema but are dynamically defined in the SPARQL query, this
- * requires more complicated logic than usual.
- */
+// $Id$
 function sparql_views_views_data() {
-  $data['sparql_ep']['table']['group'] = t('SPARQL');
+  $data['sparql_views']['table']['group']  = t('SPARQL Views');
 
-  $data['sparql_ep']['table']['base'] = array(
-    'title' => t('SPARQL query'),
-    'help' => t('Connects to a SPARQL endpoint.'),
-    'query class' => 'sparql_query',
+  $data['sparql_views']['table']['base'] = array(
+    'field' =>'vsid',
+    'title' => t('SPARQL Views'),
+    'query class' => 'sparql_views_query',
+    'help' => t('Views SPARQL query builder'),
   );
-
-  $data['sparql_ep']['where'] = array(
-    'title' => t('Where'),
-    'help' => t('Add a triple pattern where clause.'),
-    'filter' => array(
-      'handler' => 'sparql_views_handler_filter_where',
-    ),
-  );
-
-  // Because views_get_current_view() does not work in this context, we have
-  // to figure out the view from the path. This is a dirty hack, if anyone has
-  // any better ideas, let me know.
-  if (arg(4) == 'add-item' || arg(4) == 'config-item') {
-    $view = views_ui_cache_load(arg(5));
-    $display_name = arg(6);
-  }
-  if (arg(3) == 'edit') {
-    $view = views_ui_cache_load(arg(4));
-    $display_name = 'default';
-  }
-  $fields = _sparql_views_get_fields($view, $display_name);
-
-  // We dynamically create the fields based on the variables that have been
-  // entered into the SPARQL query via filters. This is because RDF datasets
-  // do not have set schemas.
-  foreach ($fields as $field) {
-    $data['sparql_ep'][$field] = array(
-      'title' => t($field),
-      'help' => t("$field as defined in the SPARQL:Where filter."),
-      'field' => array(
-        'handler' => 'sparql_views_handler_field',
-      ),
-    );
-  }
-
+  
   return $data;
 }
 
-/**
- * Implements hook_views_handlers().
- */
-function sparql_views_views_handlers() {
-  return array(
-    'info' => array(
-      'path' => drupal_get_path('module', 'sparql_views') .'/handlers',
-    ),
-    'handlers' => array(
-      // Fields
-      'sparql_views_handler_field' => array(
-        'parent' => 'views_handler_field',
-      ),
-      'sparql_views_handler_field' => array(
-        'parent' => 'views_handler_field',
-      ),
-      // Filters
-      'sparql_views_handler_filter_where' => array(
-        'parent' => 'sparql_views_handler_filter',
-      ),
-      'sparql_views_handler_filter' => array(
-        'parent' => 'views_handler_filter',
-      ),
-    ),
-  );
+function sparql_views_views_data_alter(&$data) {
+  $base_tables = array();
+  foreach($data as $key => $value) {
+    // @TODO add conditional on entity types to expose them in SPARQL Views as
+    // well. This will allow people to use the default types to query other
+    // Drupal sites.
+    if(isset($value['table']['group']) && $value['table']['group'] == 'SPARQL Views') {
+        $entity_info = entity_get_info($key);
+        if(isset($entity_info)) {
+          foreach($entity_info['bundles'] as $bn_key => $bn_value) {
+            $bn_rdf_mapping = $bn_value['rdf_mapping'];
+            $new_fields = array();
+            foreach ($bn_rdf_mapping as $key => $field ) {
+              if($key == 'rdftype')
+                continue;
+              $group = $bn_key;  
+              $new_field = array(
+                'title' => t($key),
+                'help' => t('RDF mapping: %rdf-mapping', array('%rdf-mapping' => implode(', ', $bn_rdf_mapping[$key]['predicates']))),
+                'group' => t($group),
+                'field' => array(
+                  'handler' => 'sparql_views_handler_field',
+                  'rdf_mapping' => $bn_rdf_mapping[$key],
+                ),
+                'relationship' => array(
+                  'help' => t('The last comment of a node.'),
+                  'group' => t($group),
+                  'base' => 'sparql_views',
+                  'base field' => $key,
+                  'handler' => 'sparql_views_handler_relationship',
+                  'label' => t('Test Field'),
+                ),
+              );
+             
+              $new_fields[$bn_key.'_'.$key] = $new_field;
+             // $new_fields[$key.'_'.$bn_key.'_'.$key.'_relationship'] = $new_relationship;
+            }
+            $data['sparql_views'] = array_merge($data['sparql_views'], $new_fields);  
+          }
+      }
+    }
+  }
 }
 
 /**
- * Implements hook_views_plugins().
+ * Implementation of hook_views_plugins().
  */
 function sparql_views_views_plugins() {
-  $path = drupal_get_path('module', 'sparql_views') .'/plugins';
   return array(
-    // Query plugins
     'query' => array(
-      'sparql_query' => array(
+      'sparql_views_query' => array(
         'title' => t('SPARQL Query'),
-        'help' => t('Query will be generated and run against a SPARQL endpoint.'),
-        'handler' => 'sparql_views_plugin_query_sparql',
-        //'js' => array(drupal_get_path('module', 'sparql_views') .'/js/sparql_views.js'),
-        'path' => $path,
+        'help' => t('SPARQL Query'),
+        'handler' => 'sparql_views_plugin_query_sparql'
       ),
     ),
   );
 }
 
+/**
+ * Implements hook_field_views_data().
+ *
+ * In addition to the default field information we add the relationship for
+ * views to connect back to the base table.
+ */
+function sparql_views_field_views_data_alter($field) {
+  /*$data = field_views_field_default_views_data($field);
+  foreach ($data as $table_name => $table_data) {
+    foreach ($table_data as $field_name => $field_data) {
+        $data[$table_name][$field_name]['relationship'] = array(
+          'handler' => 'sparql_views_handler_relationship',
+          'base' => 'sparql_views_entity',
+          'base field' => 'pid',
+          'label' => t('term from !field_name', array('!field_name' => $field['field_name'])),
+        );
+    }
+  }
+  return $data;*/
+}
