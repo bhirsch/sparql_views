@@ -66,6 +66,15 @@ function sparql_views_views_data_alter(&$data) {
               );
              
               $new_fields[$bundle_type.'_'.$field_name] = $new_field;
+              $new_fields[$bundle_type.'_'.$field_name . '_language']['filter'] = array(
+                'title' => t($field_name . ' language'),
+                  'help' => t('Choose the language for return values.'),
+                  'group' => t($group),
+                  'base' => 'sparql_views',
+                  'base field' => $bundle_type.'_'.$field_name,
+                  'handler' => 'sparql_views_handler_filter_language',
+                  'label' => t('Language'),
+                );
              // $new_fields[$field_name.'_'.$bundle_type.'_'.$field_name.'_relationship'] = $new_relationship;
             }
             $data['sparql_views'] = array_merge($data['sparql_views'], $new_fields);  

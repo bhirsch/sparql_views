@@ -22,6 +22,11 @@ class sparql_views_plugin_query_sparql extends views_plugin_query {
   var $replacements = array();
 
   /**
+   * An array of filter functions and parameters.
+   */
+  var $filters = array();
+
+  /**
    * A pager plugin that should be provided by the display.
    */
   var $pager = NULL;
@@ -67,6 +72,7 @@ class sparql_views_plugin_query_sparql extends views_plugin_query {
   */
   function query($view, $get_count = FALSE) {
     $triple_pattern = '';
+    $filters = '';
     $ns = rdf_get_namespaces();
     $bindings = array();
     $prefixes = '';
@@ -98,11 +104,14 @@ class sparql_views_plugin_query_sparql extends views_plugin_query {
       $namespace = $ns[$prefix];
       $prefixes .= "PREFIX $prefix: <$namespace>\n";
     }
+    foreach ($this->filters as $filter) {
+      $filters .= "FILTER $filter\n";
+    }
     $limit = isset($this->limit) ? "LIMIT $this->limit" : 'LIMIT 10';
     
     $query = $prefixes;
     $query .= $select . "\n";
-    $query .= "WHERE {\n$triple_pattern} \n";
+    $query .= "WHERE {\n$triple_pattern $filters} \n";
     $query .= $limit;
     return $query;
   }
@@ -172,6 +181,11 @@ class sparql_views_plugin_query_sparql extends views_plugin_query {
 
   function add_replacement($field_name, $replacement) {
     $this->replacements[$field_name] = $replacement;
+  }
+
+  function add_filter($function, $params) {
+    $params = implode(', ',$params);
+    $this->filters[] = "$function($params)";
   }
 
   /**
