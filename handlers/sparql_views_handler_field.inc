@@ -52,7 +52,7 @@ class sparql_views_handler_field extends views_handler_field {
  //  */
 function query() {
   $relationship = $this->options['relationship'];
-  $subject = $relationship != 'none' ? $relationship : 'subject_1';
+  $subject = $relationship != 'none' ? $relationship : $this->definition['subject'];
   $this->field_alias = $this->real_field;
   $this->query->select_fields[] = $this->real_field;
   $this->query->triples[$subject]['pred_obj'][] = array('p' => $this->definition['rdf_mapping'][0], 'o' => $this->real_field);

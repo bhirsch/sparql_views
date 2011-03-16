@@ -24,11 +24,20 @@ function sparql_views_views_data_alter(&$data) {
         if(isset($entity_info)) {
           foreach($entity_info['bundles'] as $bundle_type => $bundle) {
             $rdf_mapping = $bundle['rdf_mapping'];
+            $group = $bundle_type;  
             $new_fields = array();
+            $new_fields[$bundle_type] = array(
+              'title' => t('URI'),
+              'help' => isset($rdf_mapping['rdftype']) ? t('RDF type: %type', array('%type' => $rdf_mapping['rdftype'])) : 'RDF resource',
+              'group' => t($group),
+              'field' => array(
+                'handler' => 'sparql_views_handler_subject',
+                'rdf_mapping' => isset($rdf_mapping['rdftype']) ? $rdf_mapping['rdftype'] : NULL,
+              ),
+            );
             foreach ($rdf_mapping as $field_name => $field ) {
               if($field_name == 'rdftype')
                 continue;
-              $group = $bundle_type;  
               $new_field = array(
                 'title' => t($field_name),
                 'help' => t('RDF mapping: %rdf-mapping', array('%rdf-mapping' => implode(', ', $field['predicates']))),
@@ -36,6 +45,7 @@ function sparql_views_views_data_alter(&$data) {
                 'field' => array(
                   'handler' => 'sparql_views_handler_field',
                   'rdf_mapping' => $field['predicates'],
+                  'subject' => $bundle_type,
                 ),
                 'relationship' => array(
                   'help' => t('The last comment of a node.'),
