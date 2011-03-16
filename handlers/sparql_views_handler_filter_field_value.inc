@@ -33,10 +33,9 @@ class sparql_views_handler_filter_field_value extends views_handler_filter_strin
   }
 
   function admin_summary() {
-  if (!empty($this->options['exposed'])) {
-      return t('exposed');
-    }
-    $output .= ' '. check_plain($this->value['subject'] .' '. $this->value['predicate'] .' '. $this->value['object']);
+    $output = $this->operator . ' ';
+    $output .= check_plain($this->options['value']);
+    $output .= "<i>({$this->options['value_type']})</i>";
     return $output;
   }
   
