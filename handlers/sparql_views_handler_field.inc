@@ -55,7 +55,7 @@ function query() {
   $subject = $relationship != 'none' ? $relationship : 'subject_1';
   $this->field_alias = $this->real_field;
   $this->query->select_fields[] = $this->real_field;
-  $this->query->triples[$subject]['pred_obj'][] = array('p' => $this->definition['rdf_mapping']['predicates'][0], 'o' => $this->real_field);
+  $this->query->triples[$subject]['pred_obj'][] = array('p' => $this->definition['rdf_mapping'][0], 'o' => $this->real_field);
 }
 
  // /**

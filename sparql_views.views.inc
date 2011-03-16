@@ -35,7 +35,7 @@ function sparql_views_views_data_alter(&$data) {
                 'group' => t($group),
                 'field' => array(
                   'handler' => 'sparql_views_handler_field',
-                  'rdf_mapping' => $field,
+                  'rdf_mapping' => $field['predicates'],
                 ),
                 'relationship' => array(
                   'help' => t('The last comment of a node.'),
