@@ -2,7 +2,7 @@
 /**
  * Handler for a subject.
  */
-class sparql_views_handler_subject extends sparql_views_handler_field {
+class sparql_views_handler_field_subject extends sparql_views_handler_field {
   /**
   * Called to add the field to a query.
   */

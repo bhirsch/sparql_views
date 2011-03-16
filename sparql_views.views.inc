@@ -31,7 +31,7 @@ function sparql_views_views_data_alter(&$data) {
               'help' => isset($rdf_mapping['rdftype']) ? t('RDF type: %type', array('%type' => $rdf_mapping['rdftype'])) : 'RDF resource',
               'group' => t($group),
               'field' => array(
-                'handler' => 'sparql_views_handler_subject',
+                'handler' => 'sparql_views_handler_field_subject',
                 'rdf_mapping' => isset($rdf_mapping['rdftype']) ? $rdf_mapping['rdftype'] : NULL,
               ),
             );
