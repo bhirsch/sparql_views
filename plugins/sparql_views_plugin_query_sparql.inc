@@ -17,6 +17,11 @@ class sparql_views_plugin_query_sparql extends views_plugin_query {
   var $triples = array();
 
   /**
+   * An array of URIs and resources that are used as replacements for variables.
+   */
+  var $replacements = array();
+
+  /**
    * A pager plugin that should be provided by the display.
    */
   var $pager = NULL;
@@ -66,20 +71,25 @@ class sparql_views_plugin_query_sparql extends views_plugin_query {
     $bindings = array();
     $prefixes = '';
     $mynamespaces = array();
-    // Add a question mark before each variable.
+
+    // Create SELECT statement.
+    $select = 'SELECT';
     foreach ($this->select_fields as $key => $field) {
-      $this->select_fields[$key] = "?$field";
+      // Do not add variable to SELECT if it will be replaced with a value.
+      if (!isset($this->replacements[$field])) {
+        // Add a question mark before each variable.
+        $select .= " ?$field";
+      }
     }
-    $select = 'SELECT ' . implode(' ', $this->select_fields);
     $where = '';
     foreach($this->triples as $s => $pattern) {
       $statements = array();
       $triple_pattern .= "?$s";
       foreach($pattern['pred_obj'] as $pred_obj) {
-        $p = $pred_obj['p'];
-        $o = $pred_obj['o'];
-        $statements[] = " $p ?$o";
-        $mynamespaces[] = _sparql_views_predicate_ns($pred_obj['p']); 
+        $p = isset($this->replacements[$pred_obj['p']]) ? $this->replacements[$pred_obj['p']] : $pred_obj['p'];
+        $o = isset($this->replacements[$pred_obj['o']]) ? $this->replacements[$pred_obj['o']] : '?' . $pred_obj['o'];
+        $statements[] = " $p $o";
+        $mynamespaces[] = _sparql_views_predicate_ns($p); 
       }
       $triple_pattern .= implode(';', $statements) . ".\n";
     }
@@ -159,6 +169,10 @@ class sparql_views_plugin_query_sparql extends views_plugin_query {
 
       return $alias;
     }
+
+  function add_replacement($field_name, $replacement) {
+    $this->replacements[$field_name] = $replacement;
+  }
 
   /**
    * Add a signature to the query, if such a thing is feasible.
