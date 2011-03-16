@@ -10,7 +10,7 @@ class sparql_views_handler_filter_field_value extends views_handler_filter_strin
   function option_definition() {
     $options = parent::option_definition();
 
-    $options['variable_type'] = array('default' => 'string');
+    $options['value_type'] = array('default' => 'string');
 
     return $options;
   }
@@ -87,15 +87,14 @@ class sparql_views_handler_filter_field_value extends views_handler_filter_strin
         '#value' => NULL
       );
     }
-    $form['variable_type'] = array(
-        '#type' => 'radios',
-        '#title' => t('Variable Type'),
-        '#options' => array('uri' => 'URI', 'string' => 'String', 'number' => 'Number'),
-        '#default_value' => $this->options['variable_type'],
-        // @TODO remove inline style and replace with an attached css.
-        '#prefix' => '<div style="clear:both" class="views-left-30">',
-        '#suffix' => '</div>',
-      );
+    $form['value_type'] = array(
+      '#type' => 'select',
+      '#title' => t('Value Type'),
+      '#options' => array('string' => 'String', 'uri' => 'URI', 'number' => 'Number'),
+      '#default_value' => $this->options['value_type'],
+      '#prefix' => '<div class="views-right-70">',
+      '#suffix' => '</div>',
+    );
   }
 
   function query() {
@@ -107,15 +106,17 @@ class sparql_views_handler_filter_field_value extends views_handler_filter_strin
   }
   
   function op_equal($field_name) {
-    dpm($this, 'op_e');
     // If this is a URI, we have to replace the variable with the URI. We may
     // also need to replace the URI value back into the results.
-    switch($this->options['variable_type']){
+    switch($this->options['value_type']){
       case 'uri':
         $replacement = $this->options['value'];
         $this->query->add_replacement($field_name, "<$replacement>");
         break;
+      case 'string':
+        $replacement = $this->options['value'];
+        
+        break;
     }
-    //$this->query->add_match($this->options['group'], $field, $this->value, $this->operator());
   }
 }
