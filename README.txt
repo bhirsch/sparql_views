@@ -1,56 +1,36 @@
+SPARQL Views module
+-------------------
+By Lin Clark, lin-clark.com
 
-DRUPAL 6 vs. DRUPAL 7
-=====================
-Please note, while this is being developed in Drupal 6, I do not plan to
-maintain a Drupal 6 version of this module. It will be released in Drupal 7 as
-soon as there are stable versions of all of the required modules.
+This module adds:
+- A query plugin for Views to query remote SPARQL endpoints, RDF files, and
+  RDFa on Web pages.
+- An entity type, sparql_views_entity, that is used to maintain an internal
+  representation of the resource/predicate relationship. Bundles of this entity
+  can be created either in code or through Field UI and provide the fields for
+  manipulation with Views. The RDF mapping for the fields in the bundle is what
+  is used to construct the query.
+  
+DEPENDENCIES
+------------
+This module depends upon:
+- Entity API ('entity') for the sparql_views_entity functionality
+- SPARQL ('sparql') for the SPARQL query API and SPARQL endpoint registry.
 
-INSTALL
-=======
-These are temp installation instructions while SPARQL Views is in heavy
-development.
+Optionally, the following modules may also be used:
+- RDF UI ('rdfui', part of the 'rdf' contrib package) allows you to create
+  mappings for bundles created using the Field UI
 
-1. Download Views 3 dev.
-2. Apply the following patch to Views,
-   http://drupal.org/files/issues/views_621142-16.patch
-3. Download the ARC library from http://code.semsol.org/source/arc.tar.gz
-   and place it in sparql_views/lib/rdfx/vendor/
-4. Enable Views, Views UI, RDFx, and SPARQL Views.
-5. After enabling Views, turn off Views data caching.
-
-HACKS
-=====
-Because there are some differences between the way RDF datasets and SPARQL work
-as opposed to relational databases and SQL, there are some hacks that are
-required. If you can think of improvements, please post an issue in the issue
-queue at http://drupal.org/project/issues/sparql_views.
-
-1. Defining fields
-Because there is no set schema when using SPARQL against arbitrary RDF datasets,
-the module cannot define the fields in the sparql_ep base table. Thus, we cannot
-define the fields in hook_views_data as we usually would.
-
-Instead, we add the field definition dynamically by looking at the URL to get
-the view name and display name and then retriving the variables defined in the
-WHERE clauses via the filter system.
-
-2. Handling rows with multi-value fields
-In Views, if a query would result in a mutiple values for one field, you simply
-perform a secondary query. For instance, "the user roles field actually performs
-a secondary query to collect all of the roles for the users listed and put them
-together as a single field," (taken from rough draft of Drupal Building Blocks
-by Earl Miles et al.)
-
-However, when using SPARQL against arbitrary datasets, we do not know which
-variables will return multiple values and running a separate query for each
-would not be performant, so we process the results after the query returns.
-
-DRUPAL 6 HACKS
-==============
-These hacks are necessary because of the differences between Drupal 6 and 7.
-
-1. rdfx_ functions are included in SPARQL Views because they differ from the rdf
-functions in 6.
-
-2. The ARC library needs to be placed in SPARQL Views folder, but in D7 the
-library is in rdfx.
+HONOR ROLL
+----------
+Thank you to:
+- Remon Georgy (http://drupal.org/user/143827) for the idea to use an internal
+  representation of the remote resources.
+- Matthias 'netsensei' Vandermaesen (http://drupal.org/user/350460) for patches
+  to the original SPARQL Views and brainstorming.
+- Laura 'laura s' Scott (http://drupal.org/user/18973) for UI help on the
+  Drupal 6 version.
+- Google Summer of Code and Drupal's GSOC organizing team for initial support.
+- Mark Birbeck (http://drupal.org/user/101283) for testing and bug reporting.
+- Everyone who contributed ideas and suggestions in the issue queue and at
+  Drupal events.
