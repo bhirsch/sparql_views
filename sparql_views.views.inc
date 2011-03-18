@@ -96,26 +96,11 @@ function sparql_views_views_plugins() {
         'handler' => 'sparql_views_plugin_query_sparql'
       ),
     ),
+    'argument validator' => array(
+      'sparql_views' => array(
+        'title' => t('SPARQL value'),
+        'handler' => 'sparql_views_plugin_argument_validate',
+      ),
+    ),
   );
-}
-
-/**
- * Implements hook_field_views_data().
- *
- * In addition to the default field information we add the relationship for
- * views to connect back to the base table.
- */
-function sparql_views_field_views_data_alter($field) {
-  /*$data = field_views_field_default_views_data($field);
-  foreach ($data as $table_name => $table_data) {
-    foreach ($table_data as $field_name => $field_data) {
-        $data[$table_name][$field_name]['relationship'] = array(
-          'handler' => 'sparql_views_handler_relationship',
-          'base' => 'sparql_views_entity',
-          'base field' => 'pid',
-          'label' => t('term from !field_name', array('!field_name' => $field['field_name'])),
-        );
-    }
-  }
-  return $data;*/
 }
