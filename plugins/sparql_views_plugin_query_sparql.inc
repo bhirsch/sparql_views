@@ -161,23 +161,17 @@ class sparql_views_plugin_query_sparql extends views_plugin_query {
     $view->pager['current_page'] = 0;
   }
 
-  function add_field($table, $field, $alias = '', $params = array()) {
-      // We can't use any alias in YQL query, so just use the real field name.
-      $alias = $field;
-
-      // Create a field info array.
-      $field_info = array(
-        'field' => $field,
-        'table' => $table,
-        'alias' => $alias,
-      ) + $params;
-
-      if (empty($this->fields[$alias])) {
-        $this->fields[$alias] = $field_info;
-      }
-
-      return $alias;
+  function add_field($subject, $predicate, $object) {
+    $i = 1;
+    $alias = $object;
+    while (in_array($alias, $this->select_fields)) {
+      $alias = $object . '_' . $i;
+      $i++;
     }
+    $this->select_fields[] = $alias;
+    $this->triples[$subject]['pred_obj'][] = array('p' => $predicate, 'o' => $alias);
+    return $alias;
+  }
 
   function add_replacement($field_name, $replacement) {
     $this->replacements[$field_name] = $replacement;
