@@ -15,11 +15,16 @@ class sparql_views_handler_field extends views_handler_field {
    * Called to add the field to a query.
    */
   function query() {
+    $object = $this->real_field;
     $relationship = $this->options['relationship'];
-    $subject = $relationship != 'none' ? $relationship : $this->definition['subject'];
-    $this->field_alias = $this->real_field;
-    $this->query->select_fields[] = $this->real_field;
-    $this->query->triples[$subject]['pred_obj'][] = array('p' => $this->definition['rdf_mapping'][0], 'o' => $this->real_field);
+    if ($relationship == 'none') {
+      $subject = $this->definition['subject'];
+    }
+    else {
+      $subject = $relationship;
+    }
+    $predicate = $this->definition['rdf_mapping'][0];
+    $this->field_alias = $this->query->add_field($subject, $predicate, $object);
   }
 
   function option_definition() {
