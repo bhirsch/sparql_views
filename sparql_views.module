@@ -1,5 +1,8 @@
 <?php
-// $Id$
+/**
+ * @file
+ * API functions to manipulate SPARQL Views resources.
+ */
 function sparql_views_views_api() {
   return array(
     'api' => '3.0-alpha1',
@@ -26,13 +29,6 @@ function sparql_views_rdf_namespaces() {
   );
 }
 
-function sparql_views_entity_access($op, $node = NULL, $account = NULL) {
-  if (user_access('administer sparql_views types', $account)) {
-    return TRUE;
-  }
-  return FALSE;
-}
-
 /*
  * Implements hook_module_implements_alter().
  *
@@ -53,54 +49,74 @@ function sparql_views_module_implements_alter(&$implementations, $hook) {
  * Implement hook_entity_info().
  */
 function sparql_views_entity_info() {
-  $return = array(
-    'sparql_views_entity' => array(
-      'label' => t('SPARQL Views Entity'),
-      'entity class' => 'Entity',
-      'controller class' => 'EntityAPIController',
-      'base table' => 'sparql_views_entity',
-      'fieldable' => TRUE,
-      'access callback' => 'sparql_views_entity_access',
-      'admin ui' => array(
-        'path' => 'admin/structure/sparql_views/types',
-      ),
-      'entity keys' => array(
-        'id' => 'type',
-        'bundle' => 'name',
-      ),
-      // Make use the class' label() and uri() implementation by default.
-      'label callback' => 'entity_class_label',
-      'uri callback' => 'entity_class_uri',
-      'bundles' => array(
-        'dbpedia_example'=> array(
-          'label' => 'PostIt',
-          'admin' => array(
-            'path' => 'admin/structure/sparql_views/types/manage/dbpedia_example',
-            'access arguments' => array('administer dbpedia_examples'),
-          ),
-        ),
-      ),
-      'bundle keys' => array(
-        'bundle' => 'name',
-      ),
+  $items['sparql_views_resource_type'] = array(
+    'label' => t('SPARQL Views resource type'),
+    'controller class' => 'EntityAPIController',
+    'entity class' => 'SparqlViewsResourceType',
+    'base table' => 'sparql_views_resource_type',
+    'fieldable' => TRUE,
+    'entity keys' => array(
+      'id' => 'id',
+      'label' => 'description',
+      'name' => 'name',
+    ),
+    'exportable' => TRUE,
+    'export' => array(
+      'default hook' => 'default_sparql_views_type',
+    ),
+    'bundle of' => 'sparql_views_resource',
+    'module' => 'sparql_views',
+    'access callback' => 'sparql_views_resource_type_access',
+    // Enable the entity API's admin UI.
+    'admin ui' => array(
+      'path' => 'admin/structure/sparql-views',
+      'file' => 'sparql_views.admin.inc',
+      'controller class' => 'SparqlViewsResourceTypeUIController',
     ),
   );
-  return $return;
+  $items['sparql_views_resource'] = array(
+    'label' => t('SPARQL Views resource'),
+    'controller class' => 'EntityAPIController',
+    'entity class' => 'SparqlViewsResource',
+    'base table' => 'sparql_views_resource',
+    'fieldable' => TRUE,
+    'access callback' => 'sparql_views_resource_access',
+    'entity keys' => array(
+      'id' => 'svid',
+      // The message has no label.
+      'label' => FALSE,
+      'bundle' => 'name',
+    ),
+    'bundles' => array(),
+    'bundle keys' => array(
+      'bundle' => 'name',
+    ),
+    'view modes' => array(
+      'full' => array(
+        'label' => t('Full'),
+        'custom settings' => FALSE,
+      ),
+    ),
+    'module' => 'sparql_views',
+  );
+  return $items;
 }
 
 /**
- * Implement hook_entity_info_alter().
+ * Implements hook_entity_info_alter().
  *
- * Use this hook to specify entity test bundles to avoid a recursion, as loading
- * the entity test types needs the entity info too.
+ * Use this hook to specify bundles to avoid a recursion, as loading the entity
+ * types needs the entity info too.
  */
 function sparql_views_entity_info_alter(&$entity_info) {
-  foreach (sparql_views_get_types() as $info) {
-    $entity_info['sparql_views_entity']['bundles'][$info->name] = array(
-      'label' => $info->name,
+  $types = entity_load('sparql_views_resource_type');
+  foreach ($types as $type_name => $type) {
+    $entity_info['sparql_views_resource']['bundles'][$type_name] = array(
+      'label' => $type->name,
       'admin' => array(
-        'path' => "admin/structure/sparql_views/types/manage/$info->name",
-        'bundle argument' => 5,
+        'path' => 'admin/structure/sparql-views/manage/%sparql_views_resource_type',
+        'real path' => 'admin/structure/sparql-views/manage/' . $type->name,
+        'bundle argument' => 4,
         'access arguments' => array('administer sparql_views types'),
       ),
     );
@@ -108,13 +124,54 @@ function sparql_views_entity_info_alter(&$entity_info) {
 }
 
 /**
- * Gets an array of all test entity types, keyed by the name.
- *
- * @param $name
- *   If set, the type with the given name is returned.
+ * A class used for SPARQL Views resource types.
  */
-function sparql_views_get_types($name = NULL) {
-  $types = entity_load('sparql_views_entity', isset($name) ? array($name) : FALSE);
+class SparqlViewsResourceType extends Entity {
+
+  public $name;
+  public $description = '';
+  public $argument_keys = array();
+
+  public function __construct($values = array()) {
+    parent::__construct($values, 'sparql_views_resource_type');
+  }
+}
+
+/**
+ * Creates a new message type.
+ *
+ * If a message type already exists, an exception will be thrown.
+ *
+ * @return MessageType
+ *   Returns a new message type object.
+ */
+function sparql_views_resource_type_create($name, $values = array()) {
+  // Make sure the resource type doesn't already exist to prevent duplicate key
+  // error.
+  if (sparql_views_resource_type_load($name)) {
+    throw new Exception('SPARQL Views resource type ' . check_plain($name) . ' already exists.');
+  }
+  $values['name'] = $name;
+  $return = entity_create('sparql_views_resource_type', $values);
+
+  return $return;
+}
+
+/**
+ * Message type loader.
+ *
+ * @param $type_name
+ *   (optional) The name for this message type. If no type is given all existing
+ *   types are returned.
+ *
+ * @return MessageType
+ *   Returns a fully-loaded message type definition if a type name is passed.
+ *   Else an array containing all types is returned.
+ */
+function sparql_views_resource_type_load($name = NULL) {
+  // Replace dashes with underscores so this can be used as menu argument
+  // loader too.
+  $types = entity_load('sparql_views_resource_type', isset($name) ? array(strtr($name, array('-' => '_'))) : FALSE);
   if (isset($name)) {
     return isset($types[$name]) ? $types[$name] : FALSE;
   }
@@ -122,101 +179,243 @@ function sparql_views_get_types($name = NULL) {
 }
 
 /**
- * Displays the SPARQL Views type admin overview page.
- */
-function sparql_views_entity_overview_form() {
-  $entity_info = entity_get_info('sparql_views_entity');
-  $types = $entity_info['bundles'];
-  $names = array();
-  $field_ui = module_exists('field_ui');
-  $header = array(t('Name'), array('data' => t('Operations'), 'colspan' => $field_ui ? '4' : '2'));
-  $rows = array();
-
-  foreach ($types as $key => $type) {
-    $description = isset($type['description']) ? $type['description'] : '';
-    $type_definition = array('type' => $key, 'description' => $description);
-    $row = array(theme('node_admin_overview', array('name' => $type['label'], 'type' => (object) $type_definition)));
-    // Set the edit column.
-    $row[] = array('data' => l(t('edit'), 'admin/structure/sparql_views/types/manage/' . $key));
-
-    if ($field_ui) {
-      // Manage fields.
-      $row[] = array('data' => l(t('manage fields'), 'admin/structure/sparql_views/types/manage/' . $key . '/fields'));
-
-      // Display fields.
-      $row[] = array('data' => l(t('manage display'), 'admin/structure/sparql_views/types/manage/' . $key . '/display'));
-    }
-    if (isset($type['custom'])) {
-      $row[] = array('data' => l(t('delete'), 'admin/structure/sparql_views/types/manage/' . $key . '/delete'));
-    }
-    $rows[] = $row;
-  }
-
-  $build['node_table'] = array(
-    '#theme' => 'table',
-    '#header' => $header,
-    '#rows' => $rows,
-    '#empty' => t('No content types available. <a href="@link">Add content type</a>.', array('@link' => url('admin/structure/types/add'))),
-  );
-
-  return $build;
-}
-
-/**
- * Generates the node type editing form.
- */
-function sparql_views_entity_form($form, &$form_state, $sparql_views, $op = 'edit') {
-  if ($op == 'clone') {
-    $sparql_views->label .= ' (cloned)';
-    $sparql_views->type .= '_clone';
-  }
-  else if ($op == 'add') {
-    $sparql_views->label = '';
-  }
-
-  $form['label'] = array(
-    '#title' => t('Label'),
-    '#type' => 'textfield',
-    '#default_value' => $sparql_views->label,
-  );
-  // Machine-readable type name.
-  $form['type'] = array(
-    '#type' => 'machine_name',
-    '#default_value' => isset($sparql_views->type) ? $sparql_views->type : '',
-    '#machine_name' => array(
-      'exists' => 'sparql_views_get_types',
-      'source' => array('label'),
-    ),
-    '#description' => t('A unique machine-readable name for this profile type. It must only contain lowercase letters, numbers, and underscores.'),
-  );
-  $form['actions'] = array('#type' => 'actions');
-  $form['actions']['submit'] = array(
-    '#type' => 'submit',
-    '#value' => t('Save profile type'),
-    '#weight' => 40,
-  );
-  return $form;
-}
-
-/**
- * Form API submit callback for the type form.
- */
-function sparql_views_entity_form_submit(&$form, &$form_state) {
-  $sparql_views = entity_ui_form_submit_build_entity($form, $form_state);
-  // Save and go back.
-  $sparql_views->name = $sparql_views->type;
-  $sparql_views->save();
-//  $form_state['redirect'] = 'admin/structure/sparql_views/types';
-}
-
-/**
- * Delete multiple test entities.
+ * Inserts or updates a message object into the database.
  *
- * @param $pids
- *   An array of test entity IDs.
+ * @param $message
+ *   The message object to be inserted.
+ *
+ * @return
+ *   Failure to write a record will return FALSE. Otherwise SAVED_NEW or
+ *   SAVED_UPDATED is returned depending on the operation performed.
  */
-function sparql_views_delete_multiple(array $pids) {
-  entity_get_controller('sparql_views_entity')->delete($pids);
+function sparql_views_resource_type_save($message) {
+  return entity_save('sparql_views_resource_type', $message);
+}
+
+/**
+ * Deletes an existing message.
+ *
+ * @param $message
+ *   The message object to be deleted.
+ */
+function sparql_views_resource_type_delete($message) {
+  return entity_delete('sparql_views_resource_type', $message);
+}
+
+/**
+ * A class used for messages.
+ */
+class SparqlViewsResource extends Entity {
+
+  public $name;
+  public $arguments = array();
+  public $timestamp;
+
+  public function __construct($values = array()) {
+    if (isset($values['user'])) {
+      $values['uid'] = $values['user']->uid;
+      unset($values['user']);
+    }
+
+    parent::__construct($values, 'message');
+    if (!isset($this->uid)) {
+      $this->uid = $GLOBALS['user']->uid;
+    }
+    if (!isset($this->timestamp)) {
+      $this->timestamp = time();
+    }
+  }
+
+  /**
+   * Returns the user associated with the message.
+   */
+  public function user() {
+    return user_load($this->uid);
+  }
+
+  /**
+   * Sets a new user associated with the message.
+   *
+   * @param $account
+   *   The user account object or the user account id (uid).
+   */
+  public function setUser($account) {
+    $this->uid = is_object($account) ? $account->uid : $account;
+  }
+
+  /**
+   * Gets the associated message type.
+   *
+   * @return MessageType
+   */
+  public function getType() {
+    return sparql_views_resource_type_load($this->name);
+  }
+
+  /**
+   * Generate an array for rendering the entity.
+   *
+   * @see entity_view()
+   */
+  public function view($view_mode = 'full', $langcode = NULL) {
+    $view =  parent::view($view_mode, $langcode);
+
+    $key = !empty($this->is_new) ? 0 : $this->svid;
+    $view['sparql_views_resource'][$key]['sparql_views_resource_render'] = array(
+      '#markup' => $this->getText($langcode),
+      '#prefix' => '<span class="sparql-views-resource sparql-views-resource-type-' . str_replace('_', '-', $this->getType()->name) . ' sparql-views-resource-id-' . $key . '">',
+      '#suffix' => '</span>',
+    );
+    return $view;
+  }
+
+  /**
+   * Replace arguments with their placeholders.
+   *
+   * @param $langcode
+   *   Optional; The language to get the text in. If not set the current language
+   *   will be used.
+   */
+  function getText($langcode = NULL) {
+    $output = '';
+
+    if (empty($langcode)) {
+      $langcode = LANGUAGE_NONE;
+    }
+
+    $message_type = $this->getType();
+
+    // @todo: figure out what value is stored.
+    /*if (!empty($message_type->{MESSAGE_FIELD_MESSAGE_TEXT}[$langcode][0]['value'])) {
+      $output = $message_type->{MESSAGE_FIELD_MESSAGE_TEXT}[$langcode][0]['value'];
+    }*/
+
+    if (!empty($this->arguments)) {
+      // Transform arguments before inserting them.
+      // FIXME: Check if arguments is array or text, and prepare arguments
+      // accordingly.
+      $args = array();
+      foreach ($this->arguments as $key => $value) {
+
+        if (is_array($value) && !empty($value['callback']) && function_exists($value['callback'])) {
+          // A replacement via callback function.
+          $value = call_user_func_array($value['callback'], $value['callback arguments']);
+        }
+
+        switch ($key[0]) {
+          case '@':
+            // Escaped only.
+            $args[$key] = check_plain($value);
+            break;
+
+          case '%':
+          default:
+            // Escaped and placeholder.
+            $args[$key] = drupal_placeholder($value);
+            break;
+
+          case '!':
+            // Pass-through.
+            $args[$key] = $value;
+        }
+      }
+      $output = strtr($output, $args);
+    }
+    return $output;
+  }
+}
+
+/**
+ * Helper to easily create messages.
+ *
+ * @param $name
+ *   The message type name.
+ * @param $values
+ *   Array with the following keys:
+ *   - "arguments" - Array with arguments that should be replaced on run time in
+ *     the message type.
+ *   - "timestamp" - The unix timestamp of the creation time of the message. If
+ *     empty the current time will be used.
+ * @param $account
+ *   Optional; The user object to associate the message with. If empty, the
+ *   current user will be used.
+ */
+function sparql_views_resource_create($name, $values = array(), $account = NULL) {
+  $values['name'] = $name;
+  $values['user'] = $account;
+  return entity_create('sparql_views_resource', $values);
+}
+
+/**
+ * Message load.
+ *
+ * @param $mid
+ *   The message ID.
+ * @return Message
+ *   A message object.
+ */
+function sparql_views_resource_load($svid) {
+  $result = entity_load('sparql_views_resource', array($svid));
+  return $result ? reset($result) : FALSE;
+}
+
+/**
+ * Loads multiple messages.
+ *
+ * @see entity_load().
+ */
+function sparql_views_resource_load_multiple($svids, $conditions = array()) {
+  return entity_load('sparql_views_resource', $svids, $conditions);
+}
+
+/**
+ * Message save.
+ *
+ * @param $message_instance
+ *   A message instance object.
+ * @return
+ *   The saved message instance object.
+ */
+function sparql_views_resource_save($resource) {
+  return entity_save('sparql_views_resource', $resource);
+}
+
+/**
+ * Message delete.
+ *
+ * @param $iid
+ *   Message instance IDs array.
+ */
+function sparql_views_resource_delete_multiple($svids = array()) {
+  entity_delete_multiple('sparql_views_resource', $svids);
+}
+
+/**
+ * Access callback for the message entity.
+ */
+function sparql_views_resource_access($op, $entity, $account = NULL, $entity_type = 'sparql_views_resource') {
+  return user_access('create sparql_views resources');
+}
+
+/**
+ * Access callback for the message type entities.
+ */
+function sparql_views_resource_type_access($op, $entity, $account, $entity_type) {
+  return user_access('administer sparql_views types', $account);
+}
+
+/**
+ * Entity property info getter callback for getting arguments.
+ */
+function sparql_views_resource_property_get_argument($arguments, array $options, $name, $type, $context) {
+  return isset($arguments[$context['sparql_views_resource_replace_char'] . $name]) ? $arguments[$context['sparql_views_resource_replace_char'] . $name] : NULL;
+}
+
+/**
+ * Entity property info setter callback for arguments.
+ */
+function sparql_views_resource_property_set_argument(&$arguments, $name, $value, $langcode, $type, $context) {
+  $arguments[$context['sparql_views_resource_replace_char'] . $name] = $value;
 }
 
 function _sparql_views_predicate_ns($predicate) {
