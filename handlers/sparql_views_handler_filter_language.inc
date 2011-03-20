@@ -99,7 +99,6 @@ class sparql_views_handler_filter_language extends views_handler_filter_string{
   }
   
   function op_equal($field_name) {
-    dpm($this);
     $this->query->add_filter('langMatches', array("lang(?$field_name)", '"' . strtoupper($this->value) . '"'));
   }
 }
