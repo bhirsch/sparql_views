@@ -63,6 +63,14 @@ function sparql_views_views_data_alter(&$data) {
                   'handler' => 'sparql_views_handler_filter_field_value',
                   'label' => t('Test Field'),
                 ),
+                'argument' => array(
+                  'help' => t('Replace part of the query'),
+                  'group' => t($group),
+                  'base' => 'sparql_views',
+                  'base field' => $field_name,
+                  'handler' => 'sparql_views_handler_argument',
+                  'label' => t('Test Field'),
+                ),
               );
              
               $new_fields[$bundle_type.'_'.$field_name] = $new_field;

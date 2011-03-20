@@ -89,7 +89,7 @@ class sparql_views_handler_filter_field_value extends views_handler_filter_strin
     $form['value_type'] = array(
       '#type' => 'select',
       '#title' => t('Value Type'),
-      '#options' => array('string' => 'String', 'uri' => 'URI', 'number' => 'Number'),
+      '#options' => _sparql_views_get_variable_value_types(),
       '#default_value' => $this->options['value_type'],
       '#prefix' => '<div class="views-right-70">',
       '#suffix' => '</div>',

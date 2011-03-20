@@ -36,12 +36,8 @@ class sparql_views_handler_filter_language extends views_handler_filter_string{
   }
   
   function value_form(&$form, &$form_state) {
-    $languages = array();
-    // ISO 639-1 language codes.
-    $lang_list = array('ab','aa','af','ak','sq','am','ar','an','hy','as','av','ae','ay','az','bm','ba','eu','be','bn','bh','bi','bs','br','bg','my','ca','ch','ce','ny','zh','cv','kw','co','cr','hr','cs','da','dv','nl','dz','en','eo','et','ee','fo','fj','fi','fr','ff','gl','ka','de','el','gn','gu','ht','ha','he','hz','hi','ho','hu','ia','id','ie','ga','ig','ik','io','is','it','iu','ja','jv','kl','kn','kr','ks','kk','km','ki','rw','ky','kv','kg','ko','ku','kj','la','lb','lg','li','ln','lo','lt','lu','lv','gv','mk','mg','ms','ml','mt','mi','mr','mh','mn','na','nv','nb','nd','ne','ng','nn','no','ii','nr','oc','oj','cu','om','or','os','pa','pi','fa','pl','ps','pt','qu','rm','rn','ro','ru','sa','sc','sd','se','sm','sg','sr','gd','sn','si','sk','sl','so','st','es','su','sw','ss','sv','ta','te','tg','th','ti','bo','tk','tl','tn','to','tr','ts','tt','tw','ty','ug','uk','ur','uz','ve','vi','vo','wa','cy','wo','fy','xh','yi','yo','za','zu');
-    foreach ($lang_list as $lang) {
-      $languages[$lang] = $lang;
-    }
+    $languages = _sparql_views_get_language_list();
+
     // We have to make some choices when creating this as an exposed
     // filter form. For example, if the operator is locked and thus
     // not rendered, we can't render dependencies; instead we only
