@@ -38,12 +38,14 @@ function sparql_views_views_data_alter(&$data) {
             foreach ($rdf_mapping as $field_name => $field ) {
               if($field_name == 'rdftype')
                 continue;
+              $field_info = field_info_field($field_name);
               $new_field = array(
                 'title' => t($field_name),
                 'help' => t('RDF mapping: %rdf-mapping', array('%rdf-mapping' => implode(', ', $field['predicates']))),
                 'group' => t($group),
                 'field' => array(
                   'handler' => 'sparql_views_handler_field',
+                  'field_info' => $field_info,
                   'rdf_mapping' => $field['predicates'],
                   'subject' => $bundle_type,
                 ),
