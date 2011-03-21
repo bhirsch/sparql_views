@@ -433,6 +433,41 @@ function _sparql_views_get_variable_value_types() {
   );
 }
 
+function _sparql_views_attach_form_options($options, array $selected) {
+  $op['value_type'] = array('default' => '');
+  $op['language'] = array('default' => '');
+  foreach ($selected as $key) {
+    $options['sparql_options'][$key] = $op[$key];
+  }
+  return $options;
+}
+
+function _sparql_views_attach_form_elements($form, $options, array $selected) {
+  $languages = _sparql_views_get_language_list();
+  $form_elements['value_type'] = array(
+    '#type' => 'select',
+    '#title' => t('Value Type'),
+    '#options' => _sparql_views_get_variable_value_types(),
+    '#default_value' => $options['sparql_options']['value_type'],
+  );
+  $form_elements['language'] = array(
+    '#type' => 'select',
+    '#title' => t('Language'),
+    '#options' => $languages,
+    '#default_value' => $options['sparql_options']['language'],
+  );
+
+  $form['sparql_options'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('SPARQL Settings'),
+    '#weight' => 0,
+  );
+  foreach ($selected as $key) {
+    $form['sparql_options'][$key] = $form_elements[$key];
+  }
+  return $form;
+}
+
 function _sparql_views_get_language_list() {
   $languages = array();
   // ISO 639-1 language codes.

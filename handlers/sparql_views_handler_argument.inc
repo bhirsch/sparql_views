@@ -8,11 +8,15 @@
  * Base class for arguments.
  */
 class sparql_views_handler_argument extends views_handler_argument {
+  // We will use the value type and language form elements for getting
+  // necessary info about replacements that this argument makes.
+  var $selected_sparql_options = array('value_type', 'language');
+
   function option_definition() {
     $options = parent::option_definition();
     $options['source_field'] = array('default' => '');
-    $options['value_type'] = array('default' => '');
-    $options['language'] = array('default' => '');
+    // Attach the SPARQL specific options.
+    $options = _sparql_views_attach_form_options($options, $this->selected_sparql_options);
 
     return $options;
   }
@@ -21,36 +25,21 @@ class sparql_views_handler_argument extends views_handler_argument {
     parent::options_form($form, $form_state);
 
     $fields = array();
-    $languages = _sparql_views_get_language_list();
     $instance_info = field_info_instances('node');
     foreach ($instance_info as $bundle) {
       foreach ($bundle as $field_name => $field_info) {
         $fields[$field_name] = check_plain(t($field_info['label']));
       }
     }
-    $form['sparql_settings'] = array(
-      '#type' => 'fieldset',
-      '#title' => t('SPARQL Settings'),
-      '#weight' => 0,
-    );
-    $form['sparql_settings']['source_field'] = array(
+    // Attach the SPARQL specific form elements.
+    $form = _sparql_views_attach_form_elements($form, $this, $this->selected_sparql_options);
+    $form['sparql_options']['source_field'] = array(
       '#type' => 'select',
       '#title' => t('Source Field'),
       '#options' => $fields,
       '#default_value' => $this->options['source_field'],
       '#description' => t('The variable in the query will be replaced with the value of this field on the node.'),
-    );
-    $form['sparql_settings']['value_type'] = array(
-      '#type' => 'select',
-      '#title' => t('Value Type'),
-      '#options' => _sparql_views_get_variable_value_types(),
-      '#default_value' => $this->options['value_type'],
-    );
-    $form['sparql_settings']['language'] = array(
-      '#type' => 'select',
-      '#title' => t('Language'),
-      '#options' => $languages,
-      '#default_value' => $this->options['language'],
+      '#weight' => -1,
     );
   }
 

@@ -6,11 +6,14 @@
  */
 
 class sparql_views_handler_filter_field_value extends views_handler_filter_string{
+  // We will use the value type and language form elements for getting
+  // necessary info about replacements that this filter makes.
+  var $selected_sparql_options = array('value_type', 'language');
 
   function option_definition() {
     $options = parent::option_definition();
-
-    $options['value_type'] = array('default' => 'string');
+    // Attach the SPARQL specific options.
+    $options = _sparql_views_attach_form_options($options, $this->selected_sparql_options);
 
     return $options;
   }
@@ -35,7 +38,7 @@ class sparql_views_handler_filter_field_value extends views_handler_filter_strin
   function admin_summary() {
     $output = $this->operator . ' ';
     $output .= check_plain($this->options['value']);
-    $output .= "<i>({$this->options['value_type']})</i>";
+    $output .= "<i>({$this->options['sparql_options']['value_type']})</i>";
     return $output;
   }
   
@@ -86,14 +89,8 @@ class sparql_views_handler_filter_field_value extends views_handler_filter_strin
         '#value' => NULL
       );
     }
-    $form['value_type'] = array(
-      '#type' => 'select',
-      '#title' => t('Value Type'),
-      '#options' => _sparql_views_get_variable_value_types(),
-      '#default_value' => $this->options['value_type'],
-      '#prefix' => '<div class="views-right-70">',
-      '#suffix' => '</div>',
-    );
+    // Attach the SPARQL specific form elements.
+    $form = _sparql_views_attach_form_elements($form, $this->options, $this->selected_sparql_options);
   }
 
   function query() {
