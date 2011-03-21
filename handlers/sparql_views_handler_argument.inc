@@ -32,7 +32,7 @@ class sparql_views_handler_argument extends views_handler_argument {
       }
     }
     // Attach the SPARQL specific form elements.
-    $form = _sparql_views_attach_form_elements($form, $this, $this->selected_sparql_options);
+    $form = _sparql_views_attach_form_elements($form, $this->options, $this->selected_sparql_options);
     $form['sparql_options']['source_field'] = array(
       '#type' => 'select',
       '#title' => t('Source Field'),
