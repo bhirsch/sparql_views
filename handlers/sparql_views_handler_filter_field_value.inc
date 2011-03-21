@@ -102,17 +102,9 @@ class sparql_views_handler_filter_field_value extends views_handler_filter_strin
   }
   
   function op_equal($field_name) {
-    // If this is a URI, we have to replace the variable with the URI. We may
-    // also need to replace the URI value back into the results.
-    switch($this->options['value_type']){
-      case 'uri':
-        $replacement = $this->options['value'];
-        $this->query->add_replacement($field_name, "<$replacement>");
-        break;
-      case 'string':
-        $replacement = $this->options['value'];
-        
-        break;
-    }
+    $replacement = $this->options['value'];
+    $value_type = $this->options['sparql_options']['value_type'];
+    $language = $this->options['sparql_options']['language'];
+    $this->query->add_replacement($field_name, $replacement, $value_type, $language);
   }
 }

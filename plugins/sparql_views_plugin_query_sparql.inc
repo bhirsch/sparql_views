@@ -92,8 +92,8 @@ class sparql_views_plugin_query_sparql extends views_plugin_query {
       $statements = array();
       $triple_pattern .= "?$s";
       foreach($pattern['pred_obj'] as $pred_obj) {
-        $p = isset($this->replacements[$pred_obj['p']]) ? $this->replacements[$pred_obj['p']] : $pred_obj['p'];
-        $o = isset($this->replacements[$pred_obj['o']]) ? $this->replacements[$pred_obj['o']] : '?' . $pred_obj['o'];
+        $p = isset($this->replacements[$pred_obj['p']]) ? $this->replacements[$pred_obj['p']]['replacement_formatted'] : $pred_obj['p'];
+        $o = isset($this->replacements[$pred_obj['o']]) ? $this->replacements[$pred_obj['o']]['replacement_formatted'] : '?' . $pred_obj['o'];
         $statements[] = " $p $o";
         $mynamespaces[] = _sparql_views_predicate_ns($p); 
       }
@@ -173,8 +173,22 @@ class sparql_views_plugin_query_sparql extends views_plugin_query {
     return $alias;
   }
 
-  function add_replacement($field_name, $replacement) {
-    $this->replacements[$field_name] = $replacement;
+  function add_replacement($field_name, $replacement, $value_type, $language) {
+    switch($value_type){
+      case 'uri':
+        $replacement_formatted = "<$replacement>";
+        break;
+      case 'string':
+        $replacement_formatted = '"' . $replacement . '"';
+        if (isset($language)) {
+          $replacement_formatted .= "@$language";
+        }
+        break;
+    }
+    $this->replacements[$field_name] = array(
+      'replacement_formatted' => $replacement_formatted,
+      'replacement_raw' => $replacement
+    );
   }
 
   function add_filter($function, $params) {
