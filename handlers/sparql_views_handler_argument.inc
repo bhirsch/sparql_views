@@ -32,7 +32,7 @@ class sparql_views_handler_argument extends views_handler_argument {
       }
     }
     // Attach the SPARQL specific form elements.
-    $form = _sparql_views_attach_form_elements($form, $this, $this->selected_sparql_options);
+    $form = _sparql_views_attach_form_elements($form, $this->options, $this->selected_sparql_options);
     $form['sparql_options']['source_field'] = array(
       '#type' => 'select',
       '#title' => t('Source Field'),
@@ -62,22 +62,11 @@ class sparql_views_handler_argument extends views_handler_argument {
     if (!$node) {
       return FALSE;
     }
-    
-    $source_field = $this->options['source_field'];
+    $source_field = $this->options['sparql_options']['source_field'];
     $field = field_get_items('node', $node, $source_field);
-    $field_value = $field[0]['value'];
-    switch($this->options['value_type']){
-      case 'uri':
-        $replacement = "<$field_value>";
-        break;
-      case 'string':
-        $language = $this->options['language'];
-        $replacement = '"' . $field_value . '"';
-        if (isset($language)) {
-          $replacement .= "@$language";
-        }
-        break;
-    }
-    $this->query->add_replacement($this->options['field'], $replacement);
+    $replacement = $field[0]['value'];
+    $value_type = $this->options['sparql_options']['value_type'];
+    $language = $this->options['sparql_options']['language'];
+    $this->query->add_replacement($this->options['field'], $replacement, $value_type, $language);
   }
 }
