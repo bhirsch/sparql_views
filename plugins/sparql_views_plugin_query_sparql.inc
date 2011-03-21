@@ -145,13 +145,22 @@ class sparql_views_plugin_query_sparql extends views_plugin_query {
     $query = $view->build_info['query'];
     $endpoint = $this->options['endpoint'];
     $start = microtime(TRUE);
+    // @todo add exception handling.
     $sparql_result = rdfx_sparql_request($query, $endpoint);
     $rows = $sparql_result['result']['rows'];
-    $fields = $sparql_result['result']['variables'] ;
+    $fields = $sparql_result['result']['variables'];
+    // Add the fields that were replaced by values so that we can render the
+    // preset values as part of the result.
+    $fields = array_merge($fields, array_keys($this->replacements));
     foreach ($rows as $row) {
       $views_row = array();
       foreach($fields as $field) {
-        $views_row[$field] = $row[$field];
+        if (isset($row[$field])) {
+          $views_row[$field] = $row[$field];
+        }
+        else if (isset($this->replacements[$field])) {
+          $views_row[$field] = $this->replacements[$field]['replacement_raw'];
+        }
       }
       $views_result[] = (object) $views_row;
     }
