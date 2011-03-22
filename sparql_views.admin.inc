@@ -22,7 +22,7 @@ class SparqlViewsResourceTypeUIController extends EntityDefaultUIController {
 }
 
 /**
- * Generates the message type editing form.
+ * Generates the resource type editing form.
  */
 function sparql_views_resource_type_form($form, &$form_state, $resource_type, $op = 'edit') {
   if ($op == 'clone') {
@@ -30,11 +30,11 @@ function sparql_views_resource_type_form($form, &$form_state, $resource_type, $o
     $resource_type->name .= '_clone';
   }
 
-  $form['description'] = array(
-    '#title' => t('Description'),
+  $form['label'] = array(
+    '#title' => t('Label'),
     '#type' => 'textfield',
-    '#default_value' => $resource_type->description,
-    '#description' => t('The human-readable description of this message type.'),
+    '#default_value' => isset($resource_type->label) ? $resource_type->label : '',
+    '#description' => t('The human-readable label of this resource type.'),
     '#required' => TRUE,
   );
   // Machine-readable type name.
@@ -44,31 +44,24 @@ function sparql_views_resource_type_form($form, &$form_state, $resource_type, $o
     '#disabled' => entity_has_status('sparql_views_resource_type', $resource_type, ENTITY_IN_CODE),
     '#machine_name' => array(
       'exists' => 'sparql_views_resource_type_load',
-      'source' => array('description'),
+      'source' => array('label'),
     ),
-    '#description' => t('A unique machine-readable name for this message type. It must only contain lowercase letters, numbers, and underscores.'),
+    '#description' => t('A unique machine-readable name for this resource type. It must only contain lowercase letters, numbers, and underscores.'),
   );
 
   field_attach_form('sparql_views_resource_type', $resource_type, $form, $form_state);
 
-  $form['argument_keys'] = array(
-    '#title' => t('Replacement tokens'),
-    '#type' => 'textfield',
-    '#default_value' => implode(', ', $resource_type->argument_keys),
-    '#description' => t('A comma-separated list of replacement tokens, e.g. %title or !url, of which the message text makes use of. Each replacement token has to start with one of the special characters "@", "%" or "!". This character controls the sanitization method used, analogously to the <a href="!link">t()</a> function.', array('!link' => 'http://api.drupal.org/api/drupal/includes--bootstrap.inc/function/t/7')),
-  );
-
   $form['actions'] = array('#type' => 'actions');
   $form['actions']['submit'] = array(
     '#type' => 'submit',
-    '#value' => t('Save message type'),
+    '#value' => t('Save resource type'),
     '#weight' => 40,
   );
 
   if (!entity_has_status('sparql_views_resource_type', $resource_type, ENTITY_IN_CODE) && $op != 'add') {
     $form['actions']['delete'] = array(
       '#type' => 'submit',
-      '#value' => t('Delete message type'),
+      '#value' => t('Delete resource type'),
       '#weight' => 45,
       '#limit_validation_errors' => array(),
       '#submit' => array('sparql_views_resource_type_form_submit_delete')
@@ -89,10 +82,9 @@ function sparql_views_resource_type_form_validate($form, &$form_state) {
  */
 function sparql_views_resource_type_form_submit(&$form, &$form_state) {
   $resource_type = entity_ui_form_submit_build_entity($form, $form_state);
-  $resource_type->argument_keys = array_map('trim', explode(',', $resource_type->argument_keys));
   // Save and go back.
   $resource_type->save();
-  $form_state['redirect'] = 'admin/structure/messages';
+  $form_state['redirect'] = 'admin/structure/sparql-views';
 }
 
 /**

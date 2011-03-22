@@ -25,17 +25,12 @@ function sparql_views_schema() {
         'not null' => TRUE,
         'default' => '',
       ),
-      'description' => array(
+      'label' => array(
         'description' => 'Description for this sparql_views_resource.',
         'type' => 'varchar',
         'length' => 255,
         'not null' => TRUE,
         'default' => '',
-      ),
-      'argument_keys' => array(
-        'description' => 'Serialized array with the argument keys',
-        'type' => 'text',
-        'serialize' => TRUE,
       ),
     ) + entity_exportable_schema_fields(),
     'primary key' => array('id'),
@@ -58,11 +53,6 @@ function sparql_views_schema() {
         'length' => 255,
         'not null' => TRUE,
         'default' => '',
-      ),
-      'arguments' => array(
-        'description' => 'Serialized array with the arguments',
-        'type' => 'text',
-        'serialize' => TRUE,
       ),
       'uid' => array(
         'description' => 'The user ID of the acting user.',
