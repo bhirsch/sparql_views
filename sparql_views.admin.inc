@@ -51,6 +51,20 @@ function sparql_views_resource_type_form($form, &$form_state, $resource_type, $o
 
   field_attach_form('sparql_views_resource_type', $resource_type, $form, $form_state);
 
+  $selected_endpoints = db_query("SELECT seid FROM {sparql_views_resource_type_endpoint} WHERE svid = :svid", array(':svid' => $resource_type->id))->fetchCol();
+  $endpoints = sparql_endpoint_load_multiple();
+  $options = array();
+  foreach ($endpoints as $endpoint) {
+    $options[$endpoint->seid] = $endpoint->title . ': <span class="description">' . $endpoint->endpoint . '</span>';
+  }
+  $form['endpoints'] = array(
+    '#title' => t('Endpoints this resource can be found in'),
+    '#type' => 'checkboxes',
+    '#default_value' => !empty($selected_endpoints) ? $selected_endpoints : array(),
+    '#description' => t('Different endpoints often have different ways of describing similar things. Select the endpoints that this resource can be used with and the resource and it\'s fields will show up as options in queries on the endpoints.'),
+    '#options' => $options,
+  );
+
   $form['actions'] = array('#type' => 'actions');
   $form['actions']['submit'] = array(
     '#type' => 'submit',
@@ -84,6 +98,15 @@ function sparql_views_resource_type_form_submit(&$form, &$form_state) {
   $resource_type = entity_ui_form_submit_build_entity($form, $form_state);
   // Save and go back.
   $resource_type->save();
+  $svid = $resource_type->id;
+  $delete = db_delete('sparql_views_resource_type_endpoint')->condition('svid', $svid)->execute();
+  $insert = db_insert('sparql_views_resource_type_endpoint')->fields(array('svid', 'seid'));
+  foreach ($resource_type->endpoints as $seid => $selected) {
+    if ($selected) {
+      $insert->values(array('svid' => $svid, 'seid' => $seid));
+    }
+  }
+  $insert->execute();
   $form_state['redirect'] = 'admin/structure/sparql-views';
 }
 

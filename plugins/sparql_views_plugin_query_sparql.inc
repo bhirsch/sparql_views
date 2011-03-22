@@ -41,28 +41,6 @@ class sparql_views_plugin_query_sparql extends views_plugin_query {
     $this->unpack_options($this->options, $options);
   }
 
-  function option_definition() {
-    $options = parent::option_definition();
-    $options['endpoint'] = array('default' => '');
-
-    return $options;
-  }
-  
-  function options_form(&$form, &$form_state) {
-    $endpoints = entity_load('sparql_endpoint', FALSE);
-    $ep_options = array();
-    foreach($endpoints as $key => $value) {
-      $ep_options[$value->endpoint] = $value->title;
-    }
-    $form['endpoint'] = array(
-      '#type' => 'select',  
-      '#options' => $ep_options,
-      '#title' => t('SPARQL Endpoint'),
-      '#default_value' => $this->options['endpoint'],
-      '#description' => t("The SPARQL endpoint that you want to access."),
-    );
-  }
-
  /**
   * Generate a query and a countquery from all of the information supplied
   * to the object.
@@ -143,7 +121,8 @@ class sparql_views_plugin_query_sparql extends views_plugin_query {
   function execute(&$view) {  
     module_load_include('inc', 'rdfx', 'rdfx.sparql');
     $query = $view->build_info['query'];
-    $endpoint = $this->options['endpoint'];
+    $views_data = sparql_views_views_data();
+    $endpoint = $views_data[$this->base_table]['table']['endpoint']->endpoint;
     $start = microtime(TRUE);
     // @todo add exception handling.
     $sparql_result = rdfx_sparql_request($query, $endpoint);
