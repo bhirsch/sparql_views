@@ -43,7 +43,6 @@ class sparql_views_handler_field extends views_handler_field {
 
     $field = $this->definition['field_info'];
     $field_type = field_info_field_types($field['type']);
-    $column_names = array_keys($field['columns']);
 
     $options['type'] = array(
       'default' => $field_type['default_formatter'],
@@ -143,17 +142,39 @@ class sparql_views_handler_field extends views_handler_field {
    */
   function pre_render(&$values) {
     // @todo Combine subjects.
+
   }
 
   function render($values) {
+    $output = '';
+    if (is_array($values)) {
+      $items = array();
+      foreach ($values[$this->real_field] as $value) {
+        $val = (object) array($this->field_alias => $value);
+        $items[] = $this->render_value($val);
+      }
+      if (count($items) > 1) {
+        $output = theme('item_list', array('items' => $items, 'type' => 'ul'));
+      }
+      else {
+        $output = $items[0];
+      }
+    }
+    else {
+      $output .= $this->render_value($values);
+    }
+    return $output;
+  }
+
+  function render_value($val) {
     $formatter = $this->options['type'];
     $formatters = $this->formatters();
     if (!empty($formatters[$formatter]['method'])) {
-      return $this->{$formatters[$formatter]['method']}($values);
+      return $this->{$formatters[$formatter]['method']}($val);
     }
     else {
       drupal_set_message("Missing formatter: $formatter");
-      return parent::render($values);
+      return parent::render($val);
     }
   }
 

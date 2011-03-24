@@ -41,6 +41,25 @@ class sparql_views_plugin_query_sparql extends views_plugin_query {
     $this->unpack_options($this->options, $options);
   }
 
+  function option_definition() {
+    $options = parent::option_definition();
+    $options['consolidate'] = array(
+      'default' => FALSE,
+      'bool' => TRUE,
+    );
+
+    return $options;
+  }
+  
+  function options_form(&$form, &$form_state) {
+    $form['consolidate'] = array(
+      '#type' => 'checkbox',
+      '#title' => t('Consolidate Results'),
+      '#description' => t('This will combine all the properties for a given subject into one result. This will override any field-level consolidation.'),
+      '#default_value' => !empty($this->options['consolidate']),
+    );
+  }
+
  /**
   * Generate a query and a countquery from all of the information supplied
   * to the object.
@@ -124,10 +143,16 @@ class sparql_views_plugin_query_sparql extends views_plugin_query {
     $views_data = sparql_views_views_data();
     $endpoint = $views_data[$this->base_table]['table']['endpoint']->endpoint;
     $start = microtime(TRUE);
-    // @todo add exception handling.
+
     $sparql_result = rdfx_sparql_request($query, $endpoint);
+    if (empty($sparql_result)) {
+      $view->result = array();
+      drupal_set_message(t('No result returned. Please check your query and the endpoint status.'), 'warning');
+      return;
+    }
     $rows = $sparql_result['result']['rows'];
     $fields = $sparql_result['result']['variables'];
+
     // Add the fields that were replaced by values so that we can render the
     // preset values as part of the result.
     $fields = array_merge($fields, array_keys($this->replacements));
@@ -143,8 +168,13 @@ class sparql_views_plugin_query_sparql extends views_plugin_query {
       }
       $views_result[] = (object) $views_row;
     }
-    $view->result = $views_result;
-    $view->total_rows = count($views_result);
+    if ($this->options['consolidate']) {
+      $view->result = $this->consolidate_results($views_result);
+    }
+    else {
+      $view->result = $views_result;
+    }
+    $view->total_rows = count($view->result);
     $view->execute_time = microtime(TRUE) - $start;
     $view->pager['current_page'] = 0;
   }
@@ -219,21 +249,45 @@ class sparql_views_plugin_query_sparql extends views_plugin_query {
     $this->limit = $limit;
   }
 
-  /**
-   * Set an OFFSET on the query, specifying a number of results to skip
-   */
- // function set_offset($offset) {
- //   $this->offset = $offset;
- // }
+  function consolidate_results($views_result) {
+    $results = array();
+    $columns = array_keys((array) $views_result[0]);
+    $triples = $this->triples;
+    $subjects = array_keys($triples);
+    $properties = array_diff($columns, $subjects);
 
- // /**
- //  * Render the pager, if necessary.
- //  */
- // function render_pager() {
- //   if (!empty($this->pager) && $this->pager->use_pager()) {
- //     $exposed_input = isset($this->view->exposed_data_raw) ? $this->view->exposed_data_raw : NULL;
- //     return $this->pager->render($exposed_input);
- //   }
- //   return '';
- // }
+    // Get all the rows that share the same subject
+    foreach ($views_result as $key => $value) {
+      foreach ($subjects as $subject) {
+        $row_subjects[$key][$subject] = $value->{$subject};
+        foreach ($triples[$subject]['pred_obj'] as $pred_obj) {
+          $field = $pred_obj['o'];
+          if (in_array($field, $properties)) {
+            $subject_uris[$subject][$value->{$subject}][$field][$value->{$field}] = $value->{$field};
+          }
+        }
+      }
+    }
+    $rows = _sparql_views_super_unique($row_subjects);
+    foreach ($rows as $key => $row) {
+      foreach ($row as $subject_field_name => $subject) {
+        $results[$key][$subject_field_name][] = $subject;
+        $results[$key] += $subject_uris[$subject_field_name][$subject];
+      }
+    }
+    return $results;
+  }
+}
+
+function _sparql_views_super_unique($array)
+{
+  $result = array_map("unserialize", array_unique(array_map("serialize", $array)));
+
+  foreach ($result as $key => $value) {
+    if (is_array($value)) {
+      $result[$key] = _sparql_views_super_unique($value);
+    }
+  }
+
+  return $result;
 }
