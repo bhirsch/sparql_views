@@ -112,6 +112,13 @@ function sparql_views_views_plugins() {
         'handler' => 'sparql_views_plugin_query_sparql'
       ),
     ),
+    'argument default' => array(
+      'sparql_views_argument_default_field' => array(
+        'title' => t('Field Value (Node)'),
+        'help' => t('Replace a variable in the query with a node\'s field value.'),
+        'handler' => 'sparql_views_plugin_argument_default_field',
+      ),
+    ),
   );
 }
 
