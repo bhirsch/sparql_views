@@ -105,6 +105,18 @@ class sparql_views_handler_filter_field_value extends views_handler_filter_strin
     $replacement = $this->options['value'];
     $value_type = $this->options['sparql_options']['value_type'];
     $language = $this->options['sparql_options']['language'];
-    $this->query->add_replacement($field_name, $replacement, $value_type, $language);
+    $subject = $this->definition['subject'];
+    $predicate = $this->definition['rdf_mapping'][0];
+    $field_replacement = array(
+      'field_name' => $field_name,
+      'replacement' => $replacement,
+      'value_type' => $value_type,
+      'language' => $language,
+      'sub_pred' => array(
+        's' => $subject,
+        'p' => $predicate,
+      ),
+    );
+    $this->query->add_replacement($field_replacement);
   }
 }
