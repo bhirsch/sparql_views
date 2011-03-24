@@ -129,7 +129,8 @@ function sparql_views_entity_info_alter(&$entity_info) {
 class SparqlViewsResourceType extends Entity {
 
   public $name;
-  public $description = '';
+  public $id;
+  public $label = '';
 
   public function __construct($values = array()) {
     parent::__construct($values, 'sparql_views_resource_type');

@@ -33,7 +33,7 @@ function sparql_views_resource_type_form($form, &$form_state, $resource_type, $o
   $form['label'] = array(
     '#title' => t('Label'),
     '#type' => 'textfield',
-    '#default_value' => isset($resource_type->label) ? $resource_type->label : '',
+    '#default_value' => $resource_type->label,
     '#description' => t('The human-readable label of this resource type.'),
     '#required' => TRUE,
   );
