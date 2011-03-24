@@ -37,7 +37,7 @@ class sparql_views_handler_argument extends views_handler_argument {
       '#type' => 'select',
       '#title' => t('Source Field'),
       '#options' => $fields,
-      '#default_value' => $this->options['source_field'],
+      '#default_value' => $this->options['sparql_options']['source_field'],
       '#description' => t('The variable in the query will be replaced with the value of this field on the node.'),
       '#weight' => -1,
     );
