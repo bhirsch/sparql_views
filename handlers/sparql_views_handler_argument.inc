@@ -49,7 +49,6 @@ class sparql_views_handler_argument extends views_handler_argument {
    * The argument sent may be found at $this->argument.
    */
   function query() {
-    $subject = $this->definition['subject'];
     // If the argument is set as the only argument and it is accessing a node,
     // change the argument to the nid.
     if ($this->argument == 'node') {
@@ -68,18 +67,6 @@ class sparql_views_handler_argument extends views_handler_argument {
     $replacement = $field[0]['value'];
     $value_type = $this->options['sparql_options']['value_type'];
     $language = $this->options['sparql_options']['language'];
-    $subject = $this->definition['subject'];
-    $predicate = $this->definition['rdf_mapping'][0];
-    $field_replacement = array(
-      'field_name' => $field_name,
-      'replacement' => $replacement,
-      'value_type' => $value_type,
-      'language' => $language,
-      'sub_pred' => array(
-        's' => $subject,
-        'p' => $predicate,
-      ),
-    );
-    $this->query->add_replacement($field_replacement);
+    $this->query->add_replacement($this->options['field'], $replacement, $value_type, $language);
   }
 }

@@ -73,8 +73,6 @@ function sparql_views_views_data_alter(&$data) {
             'base field' => $field_name,
             'handler' => 'sparql_views_handler_filter_field_value',
             'label' => t('Test Field'),
-            'subject' => $bundle_type,
-            'rdf_mapping' => $field['predicates'],
           ),
           'argument' => array(
             'help' => t('Replace part of the query'),
@@ -83,8 +81,6 @@ function sparql_views_views_data_alter(&$data) {
             'base field' => $field_name,
             'handler' => 'sparql_views_handler_argument',
             'label' => t('Test Field'),
-            'subject' => $bundle_type,
-            'rdf_mapping' => $field['predicates'],
           ),
         );
        

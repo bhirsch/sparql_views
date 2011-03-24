@@ -74,7 +74,6 @@ class sparql_views_plugin_query_sparql extends views_plugin_query {
     $bindings = array();
     $prefixes = '';
     $mynamespaces = array();
-    $remaining = $this->replacements;
 
     // Create SELECT statement.
     $select = 'SELECT';
@@ -86,32 +85,16 @@ class sparql_views_plugin_query_sparql extends views_plugin_query {
       }
     }
     $where = '';
-    // Iterate through the triples.
     foreach($this->triples as $s => $pattern) {
       $statements = array();
-      // Place the subject.
       $triple_pattern .= "?$s";
-      // Place all the related predicates and objects.
       foreach($pattern['pred_obj'] as $pred_obj) {
-        $p = $pred_obj['p'];
-        if (isset($this->replacements[$pred_obj['o']])) {
-          $o = $this->replacements[$pred_obj['o']]['replacement_formatted'];
-          unset($remaining[$pred_obj['o']]);
-        }
-        else {
-          $o = '?' . $pred_obj['o'];
-        }
+        $p = isset($this->replacements[$pred_obj['p']]) ? $this->replacements[$pred_obj['p']]['replacement_formatted'] : $pred_obj['p'];
+        $o = isset($this->replacements[$pred_obj['o']]) ? $this->replacements[$pred_obj['o']]['replacement_formatted'] : '?' . $pred_obj['o'];
         $statements[] = " $p $o";
         $mynamespaces[] = _sparql_views_predicate_ns($p); 
       }
       $triple_pattern .= implode(';', $statements) . ".\n";
-    }
-    // Add any remaining statements. These would arrise if filters are set on
-    // fields that are not part of the SELECT portion of the query.
-    if (!empty($remaining)) {
-      foreach ($remaining as $field => $info) {
-        $triple_pattern .= '?' . $info['sub_pred']['s'] . ' ' . $info['sub_pred']['p'] . ' ' . $info['replacement_formatted'] . ".\n";
-      }
     }
     $mynamespaces = array_unique($mynamespaces);
     foreach($mynamespaces as $prefix) {
@@ -208,14 +191,7 @@ class sparql_views_plugin_query_sparql extends views_plugin_query {
     return $alias;
   }
 
-  function add_replacement($field_replacement) {
-    $field_name = $field_replacement['field_name'];
-    $replacement = $field_replacement['replacement'];
-    $value_type = $field_replacement['value_type'];
-    $language = $field_replacement['language'];
-    // We add the subject and predicate just in case this field isn't already
-    // being used in the query.
-    $sub_pred = $field_replacement['sub_pred'];
+  function add_replacement($field_name, $replacement, $value_type, $language) {
     switch($value_type){
       case 'uri':
         $replacement_formatted = "<$replacement>";
@@ -229,8 +205,7 @@ class sparql_views_plugin_query_sparql extends views_plugin_query {
     }
     $this->replacements[$field_name] = array(
       'replacement_formatted' => $replacement_formatted,
-      'replacement_raw' => $replacement,
-      'sub_pred' => $sub_pred,
+      'replacement_raw' => $replacement
     );
   }
 
