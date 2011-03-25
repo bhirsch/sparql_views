@@ -213,7 +213,7 @@ class sparql_views_plugin_query_sparql extends views_plugin_query {
         break;
       case 'string':
         $replacement_formatted = '"' . $replacement . '"';
-        if (isset($language)) {
+        if (!empty($language)) {
           $replacement_formatted .= "@$language";
         }
         break;

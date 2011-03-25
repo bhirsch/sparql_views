@@ -36,7 +36,7 @@ class sparql_views_handler_filter_language extends views_handler_filter_string{
   }
   
   function value_form(&$form, &$form_state) {
-    $languages = _sparql_views_get_language_list();
+    $languages = array('<none>') + _sparql_views_get_language_list();
 
     // We have to make some choices when creating this as an exposed
     // filter form. For example, if the operator is locked and thus

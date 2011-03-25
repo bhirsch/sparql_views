@@ -368,7 +368,7 @@ function _sparql_views_attach_form_options($options, array $selected) {
 }
 
 function _sparql_views_attach_form_elements($form, $options, array $selected) {
-  $languages = _sparql_views_get_language_list();
+  $languages = array('<none>') + _sparql_views_get_language_list();
   $form_elements['value_type'] = array(
     '#type' => 'select',
     '#title' => t('Value Type'),
