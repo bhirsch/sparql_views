@@ -27,6 +27,11 @@ class sparql_views_plugin_query_sparql extends views_plugin_query {
   var $filters = array();
 
   /**
+   * An array of fields to order by and the ordering direction.
+   */
+  var $orderby = array();
+
+  /**
    * A pager plugin that should be provided by the display.
    */
   var $pager = NULL;
@@ -70,6 +75,7 @@ class sparql_views_plugin_query_sparql extends views_plugin_query {
   function query($view, $get_count = FALSE) {
     $triple_pattern = '';
     $filters = '';
+    $orderby = '';
     $ns = rdf_get_namespaces();
     $bindings = array();
     $prefixes = '';
@@ -101,14 +107,23 @@ class sparql_views_plugin_query_sparql extends views_plugin_query {
       $namespace = $ns[$prefix];
       $prefixes .= "PREFIX $prefix: <$namespace>\n";
     }
+
     foreach ($this->filters as $filter) {
       $filters .= "FILTER $filter\n";
+    }
+
+    if (!empty($this->orderby)) {
+      $orderby = "ORDER BY";
+      foreach ($this->orderby as $field => $order) {
+        $orderby .= " $order(?$field)\n";
+      }
     }
     $limit = isset($this->limit) ? "LIMIT $this->limit" : 'LIMIT 10';
     
     $query = $prefixes;
     $query .= $select . "\n";
     $query .= "WHERE {\n$triple_pattern $filters} \n";
+    $query .= $orderby;
     $query .= $limit;
     return $query;
   }
@@ -212,6 +227,10 @@ class sparql_views_plugin_query_sparql extends views_plugin_query {
   function add_filter($function, $params) {
     $params = implode(', ',$params);
     $this->filters[] = "$function($params)";
+  }
+
+  function add_orderby($field_name, $order) {
+    $this->orderby[$field_name] = $order;
   }
 
   /**

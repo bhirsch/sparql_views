@@ -132,6 +132,10 @@ class sparql_views_handler_field extends views_handler_field {
     $this->field_alias = $this->query->add_field($subject, $predicate, $object);
   }
 
+  function click_sort($order) {
+    $this->query->add_orderby($this->field_alias, $order);
+  }
+
   /**
    * This kind of construct makes it relatively easy for a child class
    * to add or remove functionality by overriding this function and

@@ -42,6 +42,11 @@ function sparql_views_views_data_alter(&$data) {
         'field' => array(
           'handler' => 'sparql_views_handler_field_subject',
           'rdf_mapping' => isset($rdf_mapping['rdftype']) ? $rdf_mapping['rdftype'] : NULL,
+          'click sortable' => TRUE,
+        ),
+        'sort' => array(
+          'help' => t('Order the results of the query. This can make your query very slow and will time out on some endpoints, such as DBpedia.'),
+          'handler' => 'sparql_views_handler_sort',
         ),
       );
       foreach ($rdf_mapping as $field_name => $field ) {
@@ -57,6 +62,7 @@ function sparql_views_views_data_alter(&$data) {
             'field_info' => $field_info,
             'rdf_mapping' => $field['predicates'],
             'subject' => $bundle_type,
+            'click sortable' => TRUE,
           ),
           'relationship' => array(
             'help' => t('The last comment of a node.'),
@@ -81,6 +87,10 @@ function sparql_views_views_data_alter(&$data) {
             'base field' => $field_name,
             'handler' => 'sparql_views_handler_argument',
             'label' => t('Test Field'),
+          ),
+          'sort' => array(
+            'help' => t('Order the results of the query. This can make your query very slow and will time out on some endpoints, such as DBpedia.'),
+            'handler' => 'sparql_views_handler_sort',
           ),
         );
        

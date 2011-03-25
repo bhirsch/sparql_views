@@ -12,6 +12,7 @@ files[] = sparql_views.test
 files[] = handlers/sparql_views_handler_argument.inc
 files[] = handlers/sparql_views_handler_field.inc
 files[] = handlers/sparql_views_handler_field_subject.inc
+files[] = handlers/sparql_views_handler_sort.inc
 files[] = handlers/sparql_views_handler_relationship.inc
 files[] = handlers/sparql_views_handler_filter_field_value.inc
 files[] = handlers/sparql_views_handler_filter_language.inc
