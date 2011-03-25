@@ -37,16 +37,27 @@ function _sparql_views_field_formatter_options($field_type = NULL) {
  *                      may be in this array.
  * - click sortable: If TRUE, this field may be click sorted.
  */
-class sparql_views_handler_field extends views_handler_field {  
+class sparql_views_handler_field extends views_handler_field {
   function option_definition() {
     $options = parent::option_definition();
 
-    $field = $this->definition['field_info'];
-    $field_type = field_info_field_types($field['type']);
-
-    $options['type'] = array(
-      'default' => $field_type['default_formatter'],
-    );
+    if (!empty($this->definition['field_info'])) {
+      // Set the field formatter based on the field definition. This would have
+      // been set either by a user through the Field UI or in a module's code
+      // definition of a bundle.
+      $field = $this->definition['field_info'];
+      $field_type = field_info_field_types($field['type']);
+      $options['type'] = array(
+        'default' => $field_type['default_formatter'],
+      );
+    }
+    else {
+      // Some fields, such as subject URI fields, are not full fledged Field
+      // API fields. Give them a default text handler.
+      $options['type'] = array(
+        'default' => 'text_default',
+      );
+    }
     $options['settings'] = array(
       'default' => array(),
     );
@@ -56,6 +67,11 @@ class sparql_views_handler_field extends views_handler_field {
 
   function options_form(&$form, &$form_state) {
     parent::options_form($form, $form_state);
+
+    // If this is not a Field API field, there are no formatting options.
+    if (empty($this->definition['field_info'])) {
+      return;
+    }
 
     $field = $this->definition['field_info'];
     $formatters = _sparql_views_field_formatter_options($field['type']);
