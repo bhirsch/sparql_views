@@ -174,7 +174,10 @@ class sparql_views_handler_field extends views_handler_field {
         $items[] = $this->render_value($val);
       }
       if (count($items) > 1) {
-        $output = theme('item_list', array('items' => $items, 'type' => 'ul'));
+        //$output = theme('item_list', array('items' => $items, 'type' => 'ul'));
+        foreach ($items as $item) {
+          $output .= "<div>$item</div>";
+        }
       }
       else {
         $output = $items[0];
