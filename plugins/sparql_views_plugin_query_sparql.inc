@@ -234,34 +234,6 @@ class sparql_views_plugin_query_sparql extends views_plugin_query {
   }
 
   /**
-   * Add a signature to the query, if such a thing is feasible.
-   *
-   * This signature is something that can be used when perusing query logs to
-   * discern where particular queries might be coming from.
-   */
- // function add_signature(&$view) { }
-
-  /**
-   * Get aggregation info for group by queries.
-   *
-   * If NULL, aggregation is not allowed.
-   */
- // function get_aggregation_info() { }
-
- // function options_validate(&$form, &$form_state) { }
-
-  function validate() {
-    if($this->options['endpoint'] == '') {
-      return array('Please choose a SPARQL Endpoint from "Query settings"');
-    }
-  }
- // function options_submit(&$form, &$form_state) { }
-
- // function summary_title() {
- //   return t('Settings');
- // }
-
-  /**
    * Set a LIMIT on the query, specifying a maximum number of results.
    */
   function set_limit($limit) {
