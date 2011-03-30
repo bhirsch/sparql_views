@@ -2,6 +2,7 @@ name = SPARQL Views
 description = A module for creating SPARQL queries on external endpoints and displaying them using Views.
 dependencies[] = views
 dependencies[] = entity
+dependencies[] = sparql
 dependencies[] = sparql_registry
 dependencies[] = rdfx
 package = rdf
