@@ -153,13 +153,12 @@ class sparql_views_plugin_query_sparql extends views_plugin_query {
    * $view->pager['current_page'].
    */
   function execute(&$view) {  
-    module_load_include('inc', 'rdfx', 'rdfx.sparql');
     $query = $view->build_info['query'];
     $views_data = sparql_views_views_data();
     $endpoint = $views_data[$this->base_table]['table']['endpoint']->endpoint;
     $start = microtime(TRUE);
 
-    $sparql_result = rdfx_sparql_request($query, $endpoint);
+    $sparql_result = sparql_request($query, $endpoint);
     if (empty($sparql_result)) {
       $view->result = array();
       drupal_set_message(t('No result returned. Please check your query and the endpoint status.'), 'warning');
