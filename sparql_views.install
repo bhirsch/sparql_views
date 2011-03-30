@@ -89,8 +89,8 @@ function sparql_views_schema() {
         'not null' => TRUE,
         'unsigned' => TRUE,
       ),
-      'seid' => array(
-        'description' => 'The SEID of the endpoint.',
+      'srid' => array(
+        'description' => 'The SRID of the endpoint.',
         'type' => 'int',
         'not null' => TRUE,
         'unsigned' => TRUE,
@@ -101,13 +101,13 @@ function sparql_views_schema() {
         'table' => 'sparql_views_resource_type',
         'columns' => array('svid' => 'svid'),
       ),
-      'seid' => array(
-        'table' => 'sparql_endpoint',
-        'columns' => array('seid' => 'seid'),
+      'srid' => array(
+        'table' => 'sparql_registry',
+        'columns' => array('srid' => 'srid'),
       ),
     ),
     'unique keys' => array(
-      'relation' => array('svid', 'seid'),
+      'relation' => array('svid', 'srid'),
     ),
   );
   return $schema;

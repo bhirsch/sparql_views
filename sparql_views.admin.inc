@@ -51,11 +51,11 @@ function sparql_views_resource_type_form($form, &$form_state, $resource_type, $o
 
   field_attach_form('sparql_views_resource_type', $resource_type, $form, $form_state);
 
-  $selected_endpoints = db_query("SELECT seid FROM {sparql_views_resource_type_endpoint} WHERE svid = :svid", array(':svid' => $resource_type->id))->fetchCol();
-  $endpoints = sparql_endpoint_load_multiple();
+  $selected_endpoints = db_query("SELECT srid FROM {sparql_views_resource_type_endpoint} WHERE svid = :svid", array(':svid' => $resource_type->id))->fetchCol();
+  $endpoints = sparql_registry_load_multiple();
   $options = array();
   foreach ($endpoints as $endpoint) {
-    $options[$endpoint->seid] = $endpoint->title . ': <span class="description">' . $endpoint->endpoint . '</span>';
+    $options[$endpoint->srid] = $endpoint->title . ': <span class="description">' . $endpoint->endpoint . '</span>';
   }
   $form['endpoints'] = array(
     '#title' => t('Endpoints this resource can be found in'),
@@ -100,10 +100,10 @@ function sparql_views_resource_type_form_submit(&$form, &$form_state) {
   $resource_type->save();
   $svid = $resource_type->id;
   $delete = db_delete('sparql_views_resource_type_endpoint')->condition('svid', $svid)->execute();
-  $insert = db_insert('sparql_views_resource_type_endpoint')->fields(array('svid', 'seid'));
-  foreach ($resource_type->endpoints as $seid => $selected) {
+  $insert = db_insert('sparql_views_resource_type_endpoint')->fields(array('svid', 'srid'));
+  foreach ($resource_type->endpoints as $srid => $selected) {
     if ($selected) {
-      $insert->values(array('svid' => $svid, 'seid' => $seid));
+      $insert->values(array('svid' => $svid, 'srid' => $srid));
     }
   }
   $insert->execute();

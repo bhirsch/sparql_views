@@ -29,7 +29,7 @@ function sparql_views_views_data_alter(&$data) {
   foreach (_sparql_views_get_endpoints() as $endpoint) {
     $select = db_select('sparql_views_resource_type', 'svrt')
       ->fields('svrt', array('name'));
-    $select->join('sparql_views_resource_type_endpoint', 'e', 'svrt.id = e.svid AND e.seid = :endpoint', array(':endpoint' => $endpoint->seid));
+    $select->join('sparql_views_resource_type_endpoint', 'e', 'svrt.id = e.svid AND e.srid = :endpoint', array(':endpoint' => $endpoint->srid));
     $bundles = $select->execute()->fetchCol();
     foreach($bundles as $bundle_type) {
       $rdf_mapping = $entity_info['bundles'][$bundle_type]['rdf_mapping'];
@@ -136,7 +136,7 @@ function sparql_views_views_plugins() {
  * Helper function to get base tables with hashes.
  */
 function _sparql_views_get_endpoints() {
-  $endpoints = sparql_endpoint_load_multiple();
+  $endpoints = sparql_registry_load_multiple();
   foreach ($endpoints as $key => $endpoint) {
     // We create a hash of the endpoint URI so that we can have a short base
     // table name while still ensuring exportability of Views between sites.
