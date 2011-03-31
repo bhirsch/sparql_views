@@ -35,6 +35,7 @@ function sparql_views_views_data_alter(&$data) {
       $rdf_mapping = $entity_info['bundles'][$bundle_type]['rdf_mapping'];
       $group = $bundle_type;  
       $new_fields = array();
+      // Attach handlers for the subject URI.
       $new_fields[$bundle_type] = array(
         'title' => t('URI'),
         'help' => isset($rdf_mapping['rdftype']) ? t('RDF type: %type', array('%type' => $rdf_mapping['rdftype'])) : 'RDF resource',
@@ -48,7 +49,16 @@ function sparql_views_views_data_alter(&$data) {
           'help' => t('Order the results of the query. This can make your query very slow and will time out on some endpoints, such as DBpedia.'),
           'handler' => 'sparql_views_handler_sort',
         ),
+        'argument' => array(
+          'help' => t('Replace part of the query'),
+          'group' => t($group),
+          'base' => $endpoint->table_id,
+          'base field' => $bundle_type,
+          'handler' => 'sparql_views_handler_argument',
+          'label' => t('Test Field'),
+        ),
       );
+      // Attach handlers for the individual field.
       foreach ($rdf_mapping as $field_name => $field ) {
         if($field_name == 'rdftype')
           continue;

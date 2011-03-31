@@ -93,7 +93,7 @@ class sparql_views_plugin_query_sparql extends views_plugin_query {
     $where = '';
     foreach($this->triples as $s => $pattern) {
       $statements = array();
-      $triple_pattern .= "?$s";
+      $triple_pattern .= isset($this->replacements[$s]) ? $this->replacements[$s]['replacement_formatted'] : "?$s";
       foreach($pattern['pred_obj'] as $pred_obj) {
         $p = isset($this->replacements[$pred_obj['p']]) ? $this->replacements[$pred_obj['p']]['replacement_formatted'] : $pred_obj['p'];
         $o = isset($this->replacements[$pred_obj['o']]) ? $this->replacements[$pred_obj['o']]['replacement_formatted'] : '?' . $pred_obj['o'];
@@ -205,7 +205,7 @@ class sparql_views_plugin_query_sparql extends views_plugin_query {
     return $alias;
   }
 
-  function add_replacement($field_name, $replacement, $value_type, $language) {
+  function add_replacement($field_name, $replacement, $value_type, $language = NULL) {
     switch($value_type){
       case 'uri':
         $replacement_formatted = "<$replacement>";
