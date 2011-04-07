@@ -23,12 +23,6 @@ function sparql_views_permission() {
   );
 }
 
-function sparql_views_rdf_namespaces() {
-  return array(
-    'dbpedia2' => 'http://dbpedia.org/property/',
-  );
-}
-
 /*
  * Implements hook_module_implements_alter().
  *
