@@ -1,0 +1,8 @@
+name = SPARQL Views Test
+description = Test module for SPARQL Views.
+package = SPARQL Views
+core = 7.x
+dependencies[] = views
+dependencies[] = sparql_views
+hidden = TRUE
+

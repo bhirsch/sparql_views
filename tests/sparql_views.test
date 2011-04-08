@@ -1,5 +1,4 @@
 <?php
-// $Id$
 
 /**
  * Test the SPARQL Views resource CRUD handling.

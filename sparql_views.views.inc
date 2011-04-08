@@ -1,7 +1,7 @@
 <?php
 
 function sparql_views_views_data() {
-  foreach (_sparql_views_get_endpoints() as $endpoint) {
+  foreach (sparql_views_get_endpoints() as $endpoint) {
     $data[$endpoint->table_id]['table']['group'] = t('SPARQL Views');
   
     $data[$endpoint->table_id]['table']['base'] = array(
@@ -26,7 +26,7 @@ function sparql_views_views_data() {
 function sparql_views_views_data_alter(&$data) {
   $entity_info = entity_get_info('sparql_views_resource');
   // Create the data definition for each endpoint.
-  foreach (_sparql_views_get_endpoints() as $endpoint) {
+  foreach (sparql_views_get_endpoints() as $endpoint) {
     $select = db_select('sparql_views_resource_type', 'svrt')
       ->fields('svrt', array('name'));
     $select->join('sparql_views_resource_type_endpoint', 'e', 'svrt.id = e.svid AND e.srid = :endpoint', array(':endpoint' => $endpoint->srid));
@@ -145,7 +145,7 @@ function sparql_views_views_plugins() {
 /*
  * Helper function to get base tables with hashes.
  */
-function _sparql_views_get_endpoints() {
+function sparql_views_get_endpoints() {
   $endpoints = sparql_registry_load_multiple();
   foreach ($endpoints as $key => $endpoint) {
     // We create a hash of the endpoint URI so that we can have a short base
