@@ -1,6 +1,7 @@
 <?php
 
 function sparql_views_views_data() {
+  $data = array();
   foreach (sparql_views_get_endpoints() as $endpoint) {
     $data[$endpoint->table_id]['table']['group'] = t('SPARQL Views');
   
