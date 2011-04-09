@@ -35,7 +35,7 @@ class sparql_views_handler_argument extends views_handler_argument {
       '#type' => 'textarea',
       '#title' => t('PHP argument rewrite code'),
       '#default_value' => $this->options['sparql_options']['code'],
-      '#description' => t('You can rewrite the argument using PHP. Do not use &lt;?php ?&gt;. The argument passed in will be "$argument". You may change the argument by setting "$handler->argument" (i.e. $handler->argument = "http://dbpedia.org/resource/$argument"). You may change the title used for substitutions for this argument by setting "$argument->validated_title".'),
+      '#description' => t('Enter PHP code that returns a value to use for this filter. Do not use &lt;?php ?&gt;. You must return only a single value for just this filter. You can use $this->argument in your return. For example, return "http://dbpedia.org/resource/" . $this->argument.'),
     );
 
     $this->check_access($form, 'code');
@@ -67,14 +67,14 @@ class sparql_views_handler_argument extends views_handler_argument {
    * The argument sent may be found at $this->argument.
    */
   function query() {
-    $argument = $this->argument;
     ob_start();
-    $result = eval($this->options['sparql_options']['code']);
+    $return = eval($this->options['sparql_options']['code']);
     ob_end_clean();
 
-    $replacement = $this->argument;
+    $replacement = !empty($return) ? $return : $this->argument;
+
     $value_type = $this->options['sparql_options']['value_type'];
     $language = $this->options['sparql_options']['language'];
-    $this->query->add_replacement($this->options['field'], $replacement, $value_type);
+    $this->query->add_replacement($this->options['field'], $replacement, $value_type, $language);
   }
 }
