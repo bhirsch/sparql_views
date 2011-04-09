@@ -196,7 +196,7 @@ class sparql_views_handler_field extends views_handler_field {
       return $this->{$formatters[$formatter]['method']}($val);
     }
     else {
-      drupal_set_message("Missing formatter: $formatter");
+      vsm("Missing formatter: $formatter");
       return parent::render($val);
     }
   }
