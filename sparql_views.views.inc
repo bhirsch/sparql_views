@@ -1,7 +1,7 @@
 <?php
 
 function sparql_views_views_data() {
-  $data = array();
+  // For each registered endpoint, create a new base table.
   foreach (sparql_views_get_endpoints() as $endpoint) {
     $data[$endpoint->table_id]['table']['group'] = t('SPARQL Views');
   
@@ -14,7 +14,12 @@ function sparql_views_views_data() {
 
     $data[$endpoint->table_id]['table']['endpoint'] = $endpoint;
   }
-  
+
+  if (!isset($data)) {
+    drupal_set_message(t('There are no SPARQL Views view types available. To make one available, !register.', array('!register' => l(t('register a SPARQL endpoint'), 'admin/structure/sparql_registry'))));
+    return;
+  }
+
   return $data;
 }
 
