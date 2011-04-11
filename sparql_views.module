@@ -23,22 +23,6 @@ function sparql_views_permission() {
   );
 }
 
-/*
- * Implements hook_module_implements_alter().
- *
- * This is necessary because Entity API recommends attaching bundles to
- * entity info in hook_entity_info_alter(). However, rdf also attaches its
- * mappings to the bundle with rdf_entity_info_alter. If the hook implementation
- * for the entity comes after RDF, the mappings will not be attached.
- */
-function sparql_views_module_implements_alter(&$implementations, $hook) {
-  if ($hook == 'entity_info_alter') {
-    $temp = $implementations['rdf'];
-    unset($implementations['rdf']);
-    $implementations['rdf'] = $temp;
-  }  
-}
-
 /**
  * Implement hook_entity_info().
  */
@@ -93,28 +77,22 @@ function sparql_views_entity_info() {
     ),
     'module' => 'sparql_views',
   );
-  return $items;
-}
 
-/**
- * Implements hook_entity_info_alter().
- *
- * Use this hook to specify bundles to avoid a recursion, as loading the entity
- * types needs the entity info too.
- */
-function sparql_views_entity_info_alter(&$entity_info) {
-  $types = entity_load('sparql_views_resource_type');
-  foreach ($types as $type_name => $type) {
-    $entity_info['sparql_views_resource']['bundles'][$type_name] = array(
-      'label' => $type->name,
+  // Attach all the bundles that have been defined by the user.
+  $bundles = db_query("SELECT name, label FROM {sparql_views_resource_type}")->fetchAll();
+  foreach ($bundles as $key => $bundle) {
+    $items['sparql_views_resource']['bundles'][$bundle->name] = array(
+      'label' => $bundle->label,
       'admin' => array(
         'path' => 'admin/structure/sparql-views/manage/%sparql_views_resource_type',
-        'real path' => 'admin/structure/sparql-views/manage/' . $type->name,
+        'real path' => 'admin/structure/sparql-views/manage/' . $bundle->name,
         'bundle argument' => 4,
         'access arguments' => array('administer sparql_views types'),
       ),
     );
   }
+
+  return $items;
 }
 
 /**
