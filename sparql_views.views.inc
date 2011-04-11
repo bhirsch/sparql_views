@@ -16,7 +16,7 @@ function sparql_views_views_data() {
   }
 
   if (!isset($data)) {
-    drupal_set_message(t('There are no SPARQL Views view types available. To make one available, !register.', array('!register' => l(t('register a SPARQL endpoint'), 'admin/structure/sparql_registry'))));
+    drupal_set_message(t('There are no SPARQL Views view types available. To make one available, !register.', array('!register' => l(t('register a SPARQL endpoint'), 'admin/structure/sparql_registry'))), 'warning');
     return;
   }
 

@@ -29,7 +29,7 @@ function sparql_views_permission() {
 function sparql_views_entity_info() {
   $items['sparql_views_resource_type'] = array(
     'label' => t('SPARQL Views resource type'),
-    'controller class' => 'EntityAPIController',
+    'controller class' => 'SparqlViewsController',
     'entity class' => 'SparqlViewsResourceType',
     'base table' => 'sparql_views_resource_type',
     'fieldable' => TRUE,
@@ -54,7 +54,7 @@ function sparql_views_entity_info() {
   );
   $items['sparql_views_resource'] = array(
     'label' => t('SPARQL Views resource'),
-    'controller class' => 'EntityAPIController',
+    'controller class' => 'SparqlViewsController',
     'entity class' => 'SparqlViewsResource',
     'base table' => 'sparql_views_resource',
     'fieldable' => TRUE,
@@ -313,6 +313,19 @@ function sparql_views_resource_access($op, $entity, $account = NULL, $entity_typ
  */
 function sparql_views_resource_type_access($op, $entity, $account, $entity_type) {
   return user_access('administer sparql_views types', $account);
+}
+
+/**
+ * Implements hook_entity_insert().
+ */
+function sparql_views_entity_insert($type, $entity) {
+  switch ($type) {
+    // When a new SPARQL Endpoint is registered, clear the views cache so the
+    // new view type shows up.
+    case 'sparql_registry':
+      cache_clear_all('*', 'cache_views', TRUE);
+      return $entity;
+  }
 }
 
 function _sparql_views_predicate_ns($predicate) {

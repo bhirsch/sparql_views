@@ -9,6 +9,7 @@ package = RDF
 core = 7.x
 files[] = sparql_views.admin.inc
 files[] = sparql_views.views.inc
+files[] = includes/sparql_views.controller.inc
 files[] = handlers/sparql_views_handler_argument.inc
 files[] = handlers/sparql_views_handler_field.inc
 files[] = handlers/sparql_views_handler_field_subject.inc

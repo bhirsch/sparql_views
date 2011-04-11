@@ -44,6 +44,14 @@ class sparql_views_plugin_query_sparql extends views_plugin_query {
     $this->base_table = $base_table;
     $this->base_field = $base_field;
     $this->unpack_options($this->options, $options);
+
+    // Check to see whether the necessary requirements are met in order to
+    // create a valid query.
+    $data = views_fetch_data();
+    unset($data[$base_table]['table']);
+    if (count($data[$base_table]) === 0) {
+      drupal_set_message(t('No resources are available for this endpoint. Please edit the !config to indicate which resources can be used with this endpoint.', array('!config' => l(t('resource configuration', 'admin/structure/sparql-views')))), 'warning', FALSE);
+    }
   }
 
   function option_definition() {
