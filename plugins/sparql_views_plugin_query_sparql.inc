@@ -99,6 +99,8 @@ class sparql_views_plugin_query_sparql extends views_plugin_query {
       }
     }
     $where = '';
+
+    // Form the triple pattern.
     foreach($this->triples as $s => $pattern) {
       $statements = array();
       $triple_pattern .= isset($this->replacements[$s]) ? $this->replacements[$s]['replacement_formatted'] : "?$s";
@@ -114,6 +116,10 @@ class sparql_views_plugin_query_sparql extends views_plugin_query {
     foreach($mynamespaces as $prefix) {
       $namespace = $ns[$prefix];
       $prefixes .= "PREFIX $prefix: <$namespace>\n";
+    }
+    // If no triples were added, run a generic ?s ?p ?o query.
+    if (empty($triple_pattern)) {
+      $triple_pattern = "?$field ?p ?o";
     }
 
     foreach ($this->filters as $filter) {
