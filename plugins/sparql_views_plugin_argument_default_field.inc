@@ -21,24 +21,16 @@ class sparql_views_plugin_argument_default_field extends views_plugin_argument_d
       $node = menu_get_object('node', $i);
       if (!empty($node)) {
         $nid = $node->nid;
+        $source_field = $this->options['sparql_options']['source_field'];
+        $field = field_get_items('node', $node, $source_field);
+        $replacement = $field[0]['value'];
+        $value_type = $this->options['sparql_options']['value_type'];
+        $language = $this->options['sparql_options']['language'];
+        $this->argument->query->add_replacement($this->argument->options['field'], $replacement, $value_type, $language);
+        // We only return because we have to.
+        return $replacement;
       }
     }
-
-    if (arg(0) == 'node' && is_numeric(arg(1))) {
-      $nid = arg(1);
-    }
-    $node = node_load($nid);
-    if (!$node) {
-      return FALSE;
-    }
-    $source_field = $this->options['sparql_options']['source_field'];
-    $field = field_get_items('node', $node, $source_field);
-    $replacement = $field[0]['value'];
-    $value_type = $this->options['sparql_options']['value_type'];
-    $language = $this->options['sparql_options']['language'];
-    $this->argument->query->add_replacement($this->argument->options['field'], $replacement, $value_type, $language);
-    // We only return because we have to.
-    return $replacement;
   }
 
   /**

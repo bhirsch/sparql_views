@@ -166,16 +166,17 @@ class sparql_views_plugin_query_sparql extends views_plugin_query {
    * Values to set: $view->result, $view->total_rows, $view->execute_time,
    * $view->pager['current_page'].
    */
-  function execute(&$view) {  
+  function execute(&$view) {
+    $views_result = array();
     $query = $view->build_info['query'];
     $views_data = sparql_views_views_data();
     $endpoint = $views_data[$this->base_table]['table']['endpoint']->endpoint;
     $start = microtime(TRUE);
 
     $sparql_result = sparql_request($query, $endpoint);
-    if (empty($sparql_result)) {
+    if (empty($sparql_result) || empty($sparql_result['result']['rows'])) {
       $view->result = array();
-      drupal_set_message(t('No result returned. Please check your query and the endpoint status.'), 'warning');
+      vsm(t('No result returned. Please check your query and the endpoint status.'));
       return;
     }
     $rows = $sparql_result['result']['rows'];
