@@ -48,6 +48,8 @@ function sparql_views_views_data_alter(&$data) {
         'group' => t($group),
         'field' => array(
           'handler' => 'sparql_views_handler_field_subject',
+          'field_name' => 'subject',
+          'bundle' => $bundle_type,
           'rdf_mapping' => isset($rdf_mapping['rdftype']) ? $rdf_mapping['rdftype'] : NULL,
           'click sortable' => TRUE,
         ),
@@ -76,6 +78,8 @@ function sparql_views_views_data_alter(&$data) {
           'field' => array(
             'handler' => 'sparql_views_handler_field',
             'field_info' => $field_info,
+            'field_name' => $field_name,
+            'bundle' => $bundle_type,
             'rdf_mapping' => $field['predicates'],
             'subject' => $bundle_type,
             'click sortable' => TRUE,

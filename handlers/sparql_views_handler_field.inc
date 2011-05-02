@@ -146,11 +146,36 @@ class sparql_views_handler_field extends views_handler_field {
 
     if (!isset($options)) {
       $formatters = array(
-        'image' => array(
-          'method' => 'image',
+        'list_default' => array(
+          'method' => 'render_field_formatter',
+        ),
+        'list_key' => array(
+          'method' => 'render_field_formatter',
+        ),
+        'number_integer' => array(
+          'method' => 'render_field_formatter',
+        ),
+        'number_decimal' => array(
+          'method' => 'render_field_formatter',
+        ),
+        'number_unformatted' => array(
+          'method' => 'render_field_formatter',
         ),
         'text_default' => array(
-          'method' => 'text_default',
+          'method' => 'render_field_formatter',
+        ),
+        'text_trimmed' => array(
+          'method' => 'render_field_formatter',
+        ),
+        'text_summary_or_trimmed' => array(
+          'method' => 'render_field_formatter',
+        ),
+        'text_plain' => array(
+          'method' => 'render_field_formatter',
+        ),
+        // Special handling required.
+        'image' => array(
+          'method' => 'image',
         ),
       );
     }
@@ -162,7 +187,6 @@ class sparql_views_handler_field extends views_handler_field {
    */
   function pre_render(&$values) {
     // @todo Combine subjects.
-
   }
 
   function render($values) {
@@ -193,12 +217,24 @@ class sparql_views_handler_field extends views_handler_field {
     $formatter = $this->options['type'];
     $formatters = $this->formatters();
     if (!empty($formatters[$formatter]['method'])) {
-      return $this->{$formatters[$formatter]['method']}($val);
+      return $this->{$formatters[$formatter]['method']}($val, $formatter);
     }
     else {
       vsm("Missing formatter: $formatter");
       return parent::render($val);
     }
+  }
+
+  function render_field_formatter($values, $formatter) {
+    $field_name = $this->definition['field_name'];
+    $field = field_info_field($field_name);
+
+    $items[] = array('value' => $values->{$this->real_field});
+    $instances = field_info_instances('sparql_views_resource', $this->definition['bundle']);
+    $display['type'] = $formatter;
+    $display['settings'] = $this->options['settings'];
+    $formatter_function = $field['module'] . '_field_formatter_view';
+    return render($formatter_function(NULL, NULL, NULL, $instances[$field_name], NULL, $items, $display));
   }
 
   function image($values) {
@@ -213,10 +249,6 @@ class sparql_views_handler_field extends views_handler_field {
       }
     }
     $output = theme('image', $item);
-    return $output;
-  }
-
-  function text_default($values) {
-    return parent::render($values);
+    return filter_xss($output, array('img', 'a'));
   }
 }
