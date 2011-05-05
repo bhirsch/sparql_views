@@ -41,10 +41,10 @@ function sparql_views_views_data_alter(&$data) {
       $rdf_mapping = $entity_info['bundles'][$bundle_type]['rdf_mapping'];
       $group = $bundle_type;  
       $new_fields = array();
+
       // Attach handlers for the subject URI.
       $new_fields[$bundle_type] = array(
         'title' => t('URI'),
-        'help' => isset($rdf_mapping['rdftype']) ? t('RDF type: %type', array('%type' => $rdf_mapping['rdftype'])) : 'RDF resource',
         'group' => t($group),
         'field' => array(
           'handler' => 'sparql_views_handler_field_subject',
@@ -63,9 +63,46 @@ function sparql_views_views_data_alter(&$data) {
           'base' => $endpoint->table_id,
           'base field' => $bundle_type,
           'handler' => 'sparql_views_handler_argument',
-          'label' => t('Test Field'),
+          'label' => t($bundle_type),
         ),
       );
+
+      // Attach handlers for the subject RDF type.
+      $new_fields[$bundle_type . '_type'] = array(
+        'title' => t('RDF type'),
+        'group' => t($group),
+        'field' => array(
+          'handler' => 'sparql_views_handler_field_rdftype',
+          'field_name' => 'rdftype',
+          'bundle' => $bundle_type,
+          'rdf_mapping' => array('rdf:type'),
+          'subject' => $bundle_type,
+          'click sortable' => TRUE,
+        ),
+        'sort' => array(
+          'help' => t('Order the results of the query. This can make your query very slow and will time out on some endpoints, such as DBpedia.'),
+          'handler' => 'sparql_views_handler_sort',
+        ),
+        'filter' => array(
+          'help' => t('Replace part of the query'),
+          'group' => t($group),
+          'base' => $endpoint->table_id,
+          'base field' => $bundle_type,
+          'handler' => 'sparql_views_handler_filter_field_value',
+          'label' => t($bundle_type),
+          'rdf_type' => isset($rdf_mapping['rdftype']) ? $rdf_mapping['rdftype'] : NULL,
+        ),
+        'argument' => array(
+          'help' => t('Replace part of the query'),
+          'group' => t($group),
+          'base' => $endpoint->table_id,
+          'base field' => $bundle_type,
+          'handler' => 'sparql_views_handler_argument',
+          'label' => t($bundle_type),
+          'rdf_type' => isset($rdf_mapping['rdftype']) ? $rdf_mapping['rdftype'] : NULL,
+        ),
+      );
+
       // Attach handlers for the individual field.
       foreach ($rdf_mapping as $field_name => $field ) {
         if($field_name == 'rdftype')
@@ -90,7 +127,7 @@ function sparql_views_views_data_alter(&$data) {
             'base' => $endpoint->table_id,
             'base field' => $field_name,
             'handler' => 'sparql_views_handler_relationship',
-            'label' => t('Test Field'),
+            'label' => t($field_name),
           ),
           'filter' => array(
             'help' => t('Compare values.'),
@@ -98,7 +135,7 @@ function sparql_views_views_data_alter(&$data) {
             'base' => $endpoint->table_id,
             'base field' => $field_name,
             'handler' => 'sparql_views_handler_filter_field_value',
-            'label' => t('Test Field'),
+            'label' => t($field_name),
           ),
           'argument' => array(
             'help' => t('Replace part of the query'),
@@ -106,7 +143,7 @@ function sparql_views_views_data_alter(&$data) {
             'base' => $endpoint->table_id,
             'base field' => $field_name,
             'handler' => 'sparql_views_handler_argument',
-            'label' => t('Test Field'),
+            'label' => t($field_name),
           ),
           'sort' => array(
             'help' => t('Order the results of the query. This can make your query very slow and will time out on some endpoints, such as DBpedia.'),
