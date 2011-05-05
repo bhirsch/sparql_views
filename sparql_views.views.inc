@@ -63,7 +63,7 @@ function sparql_views_views_data_alter(&$data) {
           'base' => $endpoint->table_id,
           'base field' => $bundle_type,
           'handler' => 'sparql_views_handler_argument',
-          'label' => t('Test Field'),
+          'label' => t($bundle_type),
         ),
       );
       // Attach handlers for the individual field.
@@ -90,7 +90,7 @@ function sparql_views_views_data_alter(&$data) {
             'base' => $endpoint->table_id,
             'base field' => $field_name,
             'handler' => 'sparql_views_handler_relationship',
-            'label' => t('Test Field'),
+            'label' => t($field_name),
           ),
           'filter' => array(
             'help' => t('Compare values.'),
@@ -98,7 +98,7 @@ function sparql_views_views_data_alter(&$data) {
             'base' => $endpoint->table_id,
             'base field' => $field_name,
             'handler' => 'sparql_views_handler_filter_field_value',
-            'label' => t('Test Field'),
+            'label' => t($field_name),
           ),
           'argument' => array(
             'help' => t('Replace part of the query'),
@@ -106,7 +106,7 @@ function sparql_views_views_data_alter(&$data) {
             'base' => $endpoint->table_id,
             'base field' => $field_name,
             'handler' => 'sparql_views_handler_argument',
-            'label' => t('Test Field'),
+            'label' => t($field_name),
           ),
           'sort' => array(
             'help' => t('Order the results of the query. This can make your query very slow and will time out on some endpoints, such as DBpedia.'),
