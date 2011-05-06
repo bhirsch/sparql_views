@@ -82,6 +82,7 @@ class sparql_views_plugin_query_sparql extends views_plugin_query {
   */
   function query($view, $get_count = FALSE) {
     $triple_pattern = '';
+    $optionals = '';
     $filters = '';
     $orderby = '';
     $ns = rdf_get_namespaces();
@@ -107,7 +108,12 @@ class sparql_views_plugin_query_sparql extends views_plugin_query {
       foreach($pattern['pred_obj'] as $pred_obj) {
         $p = isset($this->replacements[$pred_obj['p']]) ? $this->replacements[$pred_obj['p']]['replacement_formatted'] : $pred_obj['p'];
         $o = isset($this->replacements[$pred_obj['o']]) ? $this->replacements[$pred_obj['o']]['replacement_formatted'] : '?' . $pred_obj['o'];
-        $statements[] = " $p $o";
+        if ($pred_obj['#optional'] == TRUE) {
+          $optionals .= "OPTIONAL {?$s $p $o}\n";
+        }
+        else {
+          $statements[] = " $p $o";
+        }
         $mynamespaces[] = _sparql_views_predicate_ns($p); 
       }
       $triple_pattern .= implode(';', $statements) . ".\n";
@@ -136,7 +142,7 @@ class sparql_views_plugin_query_sparql extends views_plugin_query {
     
     $query = $prefixes;
     $query .= $select . "\n";
-    $query .= "WHERE {\n$triple_pattern $filters} \n";
+    $query .= "WHERE {\n$triple_pattern $optionals $filters} \n";
     $query .= $orderby;
     $query .= $limit;
     return $query;
@@ -208,15 +214,22 @@ class sparql_views_plugin_query_sparql extends views_plugin_query {
     $view->pager['current_page'] = 0;
   }
 
-  function add_field($subject, $predicate, $object) {
+  function add_field($subject, $predicate, $object, $options = array()) {
     $i = 1;
     $alias = $object;
+
+    $defaults = array(
+      '#optional' => FALSE,
+    );
+
+    $options = array_merge($defaults, $options);
     while (in_array($alias, $this->select_fields)) {
       $alias = $object . '_' . $i;
       $i++;
     }
     $this->select_fields[] = $alias;
-    $this->triples[$subject]['pred_obj'][] = array('p' => $predicate, 'o' => $alias);
+    $this->triples[$subject]['pred_obj'][] = array_merge(array('p' => $predicate, 'o' => $alias), $options);
+
     return $alias;
   }
 

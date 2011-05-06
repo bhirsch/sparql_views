@@ -54,10 +54,14 @@ class sparql_views_handler_field extends views_handler_field {
     else {
       // Some fields, such as subject URI fields, are not full fledged Field
       // API fields. Give them a default text handler.
+      // @todo Should non-field API fields just not have this handler as a parent?
       $options['type'] = array(
         'default' => 'text_default',
       );
     }
+    $options['required'] = array(
+      'default' => TRUE,
+    );
     $options['settings'] = array(
       'default' => array(),
     );
@@ -69,12 +73,22 @@ class sparql_views_handler_field extends views_handler_field {
     parent::options_form($form, $form_state);
 
     // If this is not a Field API field, there are no formatting options.
+    // @todo Should non-field API fields just not have this handler as a parent?
     if (empty($this->definition['field_info'])) {
       return;
     }
 
     $field = $this->definition['field_info'];
     $formatters = _sparql_views_field_formatter_options($field['type']);
+
+    $form['required'] = array(
+      '#type' => 'checkbox',
+      '#title' => t('Require a value for this field (not OPTIONAL).'),
+      '#default_value' => $this->options['required'],
+      '#ajax' => array(
+        'path' => views_ui_build_form_url($form_state),
+      ),
+    );
 
     $form['type'] = array(
       '#type' => 'select',
@@ -122,6 +136,7 @@ class sparql_views_handler_field extends views_handler_field {
   function query() {
     $object = $this->real_field;
     $relationship = $this->options['relationship'];
+    $optional = empty($this->options['required']);
     if ($relationship == 'none') {
       $subject = $this->definition['subject'];
     }
@@ -129,7 +144,7 @@ class sparql_views_handler_field extends views_handler_field {
       $subject = $relationship;
     }
     $predicate = $this->definition['rdf_mapping'][0];
-    $this->field_alias = $this->query->add_field($subject, $predicate, $object);
+    $this->field_alias = $this->query->add_field($subject, $predicate, $object, array('#optional' => $optional));
   }
 
   function click_sort($order) {
@@ -228,8 +243,9 @@ class sparql_views_handler_field extends views_handler_field {
   function render_field_formatter($values, $formatter) {
     $field_name = $this->definition['field_name'];
     $field = field_info_field($field_name);
+    $value = isset($values->{$this->real_field}) ? $values->{$this->real_field} : $this->options['empty'];
 
-    $items[] = array('value' => $values->{$this->real_field});
+    $items[] = array('value' => $value);
     $instances = field_info_instances('sparql_views_resource', $this->definition['bundle']);
     $display['type'] = $formatter;
     $display['settings'] = $this->options['settings'];
