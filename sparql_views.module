@@ -325,6 +325,22 @@ function sparql_views_entity_insert($type, $entity) {
     case 'sparql_registry':
       cache_clear_all('*', 'cache_views', TRUE);
       return $entity;
+    // @todo Once #1123676 is fixed, add cache clear for
+    // sparql_views_resource_type.
+  }
+}
+
+/**
+ * Implements hook_entity_update().
+ */
+function sparql_views_entity_update($entity, $type) {
+  switch ($type) {
+    // When someone updates a SPARQL Views resource type (i.e. by adding an
+    // endpoint), refresh the Views cache so its fields are available in Views
+    // on that endpoint.
+    case 'sparql_views_resource_type':
+      cache_clear_all('*', 'cache_views', TRUE);
+      return $entity;
   }
 }
 
