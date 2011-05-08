@@ -17,7 +17,7 @@ class sparql_views_handler_filter_field_value extends views_handler_filter_strin
 
     return $options;
   }
-  
+
   /**
    * This kind of construct makes it relatively easy for a child class
    * to add or remove functionality by overriding this function and
@@ -41,7 +41,7 @@ class sparql_views_handler_filter_field_value extends views_handler_filter_strin
     $output .= "<i>({$this->options['sparql_options']['value_type']})</i>";
     return $output;
   }
-  
+
   function value_form(&$form, &$form_state) {
     // We have to make some choices when creating this as an exposed
     // filter form. For example, if the operator is locked and thus
@@ -100,9 +100,9 @@ class sparql_views_handler_filter_field_value extends views_handler_filter_strin
       $this->{$info[$this->operator]['method']}($field_name);
     }
   }
-  
+
   function op_equal($field_name) {
-    $replacement = $this->options['value'];
+    $replacement = $this->value;
     $value_type = $this->options['sparql_options']['value_type'];
     $language = $this->options['sparql_options']['language'];
     $this->query->add_replacement($field_name, $replacement, $value_type, $language);
