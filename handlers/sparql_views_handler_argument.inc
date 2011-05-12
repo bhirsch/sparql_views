@@ -26,7 +26,7 @@ class sparql_views_handler_argument extends views_handler_argument {
    * Provide the form for setting options.
    */
   function options_form(&$form, &$form_state) {
-    parent::options_form(&$form, &$form_state);
+    parent::options_form($form, $form_state);
 
     // Attach the SPARQL specific form elements.
     $form = _sparql_views_attach_form_elements($form, $this->options, $this->selected_sparql_options);
