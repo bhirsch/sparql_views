@@ -50,7 +50,7 @@ class sparql_views_plugin_query_sparql extends views_plugin_query {
     $data = views_fetch_data();
     unset($data[$base_table]['table']);
     if (count($data[$base_table]) === 0) {
-      $config = l(t('resource configuration', 'admin/structure/sparql-views'));
+      $config = l(t('resource configuration'), 'admin/structure/sparql-views');
       drupal_set_message(t('No resources are available for this endpoint. Please edit the !config to indicate which resources can be used with this endpoint.', array('!config' => $config)), 'warning', FALSE);
     }
   }
