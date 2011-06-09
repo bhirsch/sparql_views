@@ -121,8 +121,10 @@ class sparql_views_plugin_query_sparql extends views_plugin_query {
     }
     $mynamespaces = array_unique($mynamespaces);
     foreach($mynamespaces as $prefix) {
-      $namespace = $ns[$prefix];
-      $prefixes .= "PREFIX $prefix: <$namespace>\n";
+      if (isset($ns[$prefix])) {
+        $namespace = $ns[$prefix];
+        $prefixes .= "PREFIX $prefix: <$namespace>\n";
+      }
     }
     // If no triples were added, run a generic ?s ?p ?o query.
     if (empty($triple_pattern)) {
