@@ -46,19 +46,11 @@ class sparql_views_handler_argument extends views_handler_argument {
    * the form is safe and cannot be changed from user input.
    */
   function check_access(&$form, $option_name) {
-    if (!$this->access()) {
+    if (!user_access('use PHP for settings')) {
       $form['sparql_options'][$option_name]['#disabled'] = TRUE;
       $form['sparql_options'][$option_name]['#value'] = $form[$this->option_name]['#default_value'];
       $form['sparql_options'][$option_name]['#description'] .= ' <strong>' . t('Note: you do not have permission to modify this. If you change the default argument type, this setting will be lost and you will NOT be able to get it back.') . '</strong>';
     }
-  }
-
-  /**
-   * Only let users with PHP block visibility permissions set/modify this
-   * validate plugin.
-   */
-  function access() {
-    return user_access('use PHP for settings');
   }
 
   /**
